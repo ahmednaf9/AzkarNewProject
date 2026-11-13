@@ -19,6 +19,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.documentfile.provider.DocumentFile
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
@@ -216,7 +217,7 @@ private fun AzkarMuslimApp() {
                 val fullItem = activePhotoItems[fullIndex]
                 Box(
                     Modifier.fillMaxSize().background(Color.Black)
-                        .pointerInput(selectedPhoto, photoItems.size) {
+                        .pointerInput(selectedPhoto, activePhotoItems.size) {
                             awaitEachGesture {
                                 val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                                 val pointerId = down.id
@@ -235,8 +236,8 @@ private fun AzkarMuslimApp() {
                                     totalY += deltaY
                                     lastY = change.position.y
                                     if (!multiTouch && !changed && kotlin.math.abs(totalY) > 65f) {
-                                        if (totalY < 0f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
-                                        else if (totalY > 0f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
+                                        if (totalY < 0f && activePhotoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % activePhotoItems.size
+                                        else if (totalY > 0f && activePhotoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + activePhotoItems.size) % activePhotoItems.size
                                         changed = true
                                     }
                                     if (!change.pressed) break
@@ -264,7 +265,7 @@ private fun AzkarMuslimApp() {
                             FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("صور ذكر") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, modifier = Modifier.weight(1f))
                         }
                         if (tab == 1) {
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                                 photoCategories.forEach { category ->
                                     FilterChip(selected = selectedCategoryId == category.id, onClick = { selectedCategoryId = category.id; selectedPhoto = 0 }, label = { Text(category.name, maxLines = 1) })
                                 }
@@ -446,10 +447,10 @@ private fun AzkarMuslimApp() {
             val value=targetPhotoValue.toEnglishDigits().toIntOrNull()?.coerceAtLeast(1)
             val path=pendingPhotoPath
             if(value != null && path != null) {
-                val list=photoItems.toMutableList(); val existing=list.indexOfFirst { it.path == path }
+                val list=activePhotoItems.toMutableList(); val existing=list.indexOfFirst { it.path == path }
                 if(existing >= 0) list[existing]=list[existing].copy(target=value,count=0)
-                else { list.add(PhotoDhikr(UUID.randomUUID().toString(),path,value)); selectedPhoto=list.lastIndex }
-                savePhotos(list); photoTargetDialog=false; pendingPhotoPath=null
+                else { list.add(PhotoDhikr(UUID.randomUUID().toString(),path,value, categoryId = selectedCategoryId)); selectedPhoto=list.lastIndex }
+                saveActivePhotos(list); photoTargetDialog=false; pendingPhotoPath=null
             }
         }) { Text("حفظ") } }, dismissButton = { TextButton(onClick = { photoTargetDialog=false; pendingPhotoPath=null }) { Text("إلغاء") } })
 
