@@ -15,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.documentfile.provider.DocumentFile
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -118,6 +119,31 @@ private fun AzkarMuslimApp() {
         selectedPhoto = selectedPhoto.coerceIn(0, (list.size - 1).coerceAtLeast(0))
     }
 
+    val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { treeUri: Uri? ->
+        if (treeUri != null) {
+            try {
+                context.contentResolver.takePersistableUriPermission(treeUri, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                val folder = DocumentFile.fromTreeUri(context, treeUri)
+                val imageFiles = folder?.listFiles()?.filter { file ->
+                    file.isFile && (file.type?.startsWith("image/") == true || file.name?.substringAfterLast('.', "")?.lowercase() in setOf("jpg", "jpeg", "png", "webp", "gif", "bmp", "heic"))
+                }.orEmpty()
+                val importedItems = mutableListOf<PhotoDhikr>()
+                imageFiles.forEach { imageFile ->
+                    try {
+                        val destination = File(context.filesDir, "dhikr_${UUID.randomUUID()}.img")
+                        context.contentResolver.openInputStream(imageFile.uri)?.use { input -> destination.outputStream().use { output -> input.copyTo(output) } }
+                        if (destination.exists() && destination.length() > 0) importedItems.add(PhotoDhikr(UUID.randomUUID().toString(), destination.absolutePath, 33)) else destination.delete()
+                    } catch (_: Exception) { }
+                }
+                if (importedItems.isNotEmpty()) {
+                    val updated = photoItems + importedItems
+                    savePhotos(updated)
+                    selectedPhoto = updated.size - importedItems.size
+                    message = "تم تحميل ${importedItems.size.toString().toArabicDigits()} صورة بنجاح"
+                } else message = "لم يتم العثور على صور في المجلد المحدد"
+            } catch (_: Exception) { message = "تعذر تحميل صور المجلد" }
+        }
+    }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             try {
@@ -205,6 +231,7 @@ private fun AzkarMuslimApp() {
                             if (photoItems.isEmpty()) {
                                 EmptyState("لا توجد صور أذكار", "اختر صورة من هاتفك وأدخل عدد التكرار")
                                 Button(onClick = { photoPicker.launch("image/*") }) { Icon(Icons.Default.Add, null); Text("اختيار صورة") }
+                                OutlinedButton(onClick = { folderPicker.launch(null) }) { Icon(Icons.Default.ImageSymbol, null); Text("تحميل مجلد صور كامل") }
                             } else {
                                 val index = selectedPhoto.coerceIn(photoItems.indices)
                                 val item = photoItems[index]
@@ -228,6 +255,11 @@ private fun AzkarMuslimApp() {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                     OutlinedButton(onClick = { selectedPhoto=(index-1+photoItems.size)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
                                     OutlinedButton(onClick = { selectedPhoto=(index+1)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
+                                }
+                                OutlinedButton(onClick = { folderPicker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
+                                    Icon(Icons.Default.ImageSymbol, null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("تحميل مجلد صور كامل")
                                 }
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                     TextButton(onClick = { photoPicker.launch("image/*") }) { Icon(Icons.Default.Add, null); Text("إضافة صورة") }
