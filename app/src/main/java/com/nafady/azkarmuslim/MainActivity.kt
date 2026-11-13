@@ -145,16 +145,14 @@ private fun AzkarMuslimApp() {
                                 Spacer(Modifier.height(22.dp))
                                 Text(item.text, modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp), textAlign = TextAlign.Center, fontSize = 27.sp, lineHeight = 43.sp, fontWeight = FontWeight.Bold, color = Color(0xFF151515))
                                 Spacer(Modifier.height(22.dp))
-                                Counter(item.count, item.target)
-                                Spacer(Modifier.height(14.dp))
-                                Button(onClick = {
+                                Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
                                     if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0); message = "اكتمل الذكر، وعاد العداد إلى الصفر" }
                                     else next[index] = item.copy(count = count.coerceAtMost(item.target))
                                     saveTexts(next)
-                                }, modifier = Modifier.fillMaxWidth().height(64.dp), shape = RoundedCornerShape(32.dp), colors = ButtonDefaults.buttonColors(containerColor = DeepGreen)) { Text("تسبيح  +1", fontSize = 23.sp, fontWeight = FontWeight.Bold) }
+                                }
                                 Spacer(Modifier.weight(1f))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                     OutlinedButton(onClick = { val n=textItems.toMutableList(); n[index]=item.copy(count=0); saveTexts(n) }, modifier=Modifier.weight(1f)) { Text("إعادة") }
@@ -178,15 +176,13 @@ private fun AzkarMuslimApp() {
                                 Spacer(Modifier.height(6.dp))
                                 StoredPhoto(item.path, Modifier.weight(1f).fillMaxWidth())
                                 Spacer(Modifier.height(8.dp))
-                                Counter(item.count, item.target)
-                                Spacer(Modifier.height(12.dp))
-                                Button(onClick = {
+                                Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
                                     val next = photoItems.toMutableList(); val count = item.count + 1
                                     if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0); message = "اكتمل الذكر، وعاد العداد إلى الصفر" }
                                     else next[index] = item.copy(count = count.coerceAtMost(item.target))
                                     savePhotos(next)
-                                }, modifier = Modifier.fillMaxWidth().height(60.dp), shape = RoundedCornerShape(30.dp), colors = ButtonDefaults.buttonColors(containerColor = Green)) { Text("تسبيح  +1", fontSize = 22.sp, fontWeight = FontWeight.Bold) }
+                                }
                                 Spacer(Modifier.height(8.dp))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                     OutlinedButton(onClick = { val n=photoItems.toMutableList(); n[index]=item.copy(count=0); savePhotos(n) }, modifier=Modifier.weight(1f)) { Text("إعادة") }
@@ -249,8 +245,8 @@ private fun AzkarMuslimApp() {
 }
 
 @Composable
-private fun Counter(count: Int, target: Int) {
-    Box(Modifier.size(174.dp).background(Gold, CircleShape).padding(6.dp).background(DeepGreen, CircleShape).padding(4.dp).background(Color(0xFFFFF6DF), CircleShape), contentAlignment = Alignment.Center) {
+private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
+    Box(Modifier.size(174.dp).clickable(onClick = onIncrement).background(Gold, CircleShape).padding(6.dp).background(DeepGreen, CircleShape).padding(4.dp).background(Color(0xFFFFF6DF), CircleShape), contentAlignment = Alignment.Center) {
         Column(horizontalAlignment=Alignment.CenterHorizontally) {
             Text(count.toString(), fontSize=54.sp, color=DeepGreen, fontWeight=FontWeight.ExtraBold)
             Text("/ $target", fontSize=25.sp, color=Color.Black, fontWeight=FontWeight.Bold)
