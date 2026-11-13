@@ -250,7 +250,7 @@ private fun AzkarMuslimApp() {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("ذكر مكتوب") }, leadingIcon = { Icon(Icons.Default.TextFields, null) }, modifier = Modifier.weight(1f))
-                            FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("ذكر بالصورة") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, modifier = Modifier.weight(1f))
+                            FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("صور ذكر") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, modifier = Modifier.weight(1f))
                         }
                         Spacer(Modifier.height(10.dp))
                         if (tab == 0) {
@@ -259,7 +259,7 @@ private fun AzkarMuslimApp() {
                                 val index = selectedText.coerceIn(textItems.indices)
                                 val item = textItems[index]
                                 Box(Modifier.fillMaxWidth()) {
-                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
+                                    Text("✦  ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
                                     Box(Modifier.align(Alignment.CenterEnd)) {
                                         IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الذكر", tint = DeepGreen) }
                                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
@@ -331,7 +331,7 @@ private fun AzkarMuslimApp() {
                                 val index = selectedPhoto.coerceIn(photoItems.indices)
                                 val item = photoItems[index]
                                 Box(Modifier.fillMaxWidth()) {
-                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
+                                    Text("✦  ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
                                     Box(Modifier.align(Alignment.CenterEnd)) {
                                         IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الصورة", tint = Green) }
                                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
