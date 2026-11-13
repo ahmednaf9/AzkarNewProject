@@ -282,7 +282,7 @@ private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = count.toString(),
-                fontSize = 40.sp,
+                fontSize = 35.sp,
                 color = DeepGreen,
                 fontWeight = FontWeight.ExtraBold,
                 textAlign = TextAlign.Center
