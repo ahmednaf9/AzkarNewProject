@@ -270,7 +270,7 @@ private fun AzkarMuslimApp() {
 private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(128.dp)
+            .size(116.dp)
             .clickable(onClick = onIncrement)
             .background(Gold, CircleShape)
             .padding(4.dp)
