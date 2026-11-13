@@ -6,13 +6,8 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.os.VibratorManager
 import android.view.View
-import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -67,7 +62,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
@@ -132,7 +126,6 @@ private fun AzkarMuslimApp() {
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
     var targetPhotoValue by remember { mutableStateOf("٣") }
     var showSettings by remember { mutableStateOf(false) }
-    var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
     var autoRestart by remember { mutableStateOf(prefs.getBoolean("auto_restart", true)) }
     var message by remember { mutableStateOf<String?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -193,7 +186,6 @@ private fun AzkarMuslimApp() {
         }
     }
 
-    val rootView = LocalView.current
     DisposableEffect(photoFullscreen) {
         val activityWindow = (context as? ComponentActivity)?.window
         val decorView = activityWindow?.decorView
@@ -266,10 +258,10 @@ private fun AzkarMuslimApp() {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                             // RTL layout: the first category (صور ذكر) starts at the far right.
-                            photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.chunked(2).forEach { categoryRow ->
+                            photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.chunked(3).forEach { categoryRow ->
                                 Row(
                                     Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.Start)
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start)
                                 ) {
                                     categoryRow.forEach { category ->
                                         FilterChip(
@@ -281,15 +273,15 @@ private fun AzkarMuslimApp() {
                                                     maxLines = 2,
                                                     softWrap = true,
                                                     textAlign = TextAlign.Center,
-                                                    lineHeight = 14.sp,
-                                                    fontSize = 12.sp,
+                                                    lineHeight = 12.sp,
+                                                    fontSize = 11.sp,
                                                     fontWeight = FontWeight.ExtraBold
                                                 )
                                             },
-                                            modifier = Modifier.weight(1f).heightIn(min = 44.dp)
+                                            modifier = Modifier.weight(1f).heightIn(min = 40.dp)
                                         )
                                     }
-                                    repeat(2 - categoryRow.size) { Spacer(Modifier.weight(1f)) }
+                                    repeat(3 - categoryRow.size) { Spacer(Modifier.weight(1f)) }
                                 }
                             }
                         }
@@ -337,7 +329,6 @@ private fun AzkarMuslimApp() {
                                     )
                                 }
                                 Counter(item.count, item.target) {
-                                    if (vibration) vibrateDevice(context, rootView)
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
                                     if (count >= item.target && autoRestart) {
@@ -416,7 +407,6 @@ private fun AzkarMuslimApp() {
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Counter(item.count, item.target) {
-                                    if (vibration) vibrateDevice(context, rootView)
                                     val next = activePhotoItems.toMutableList(); val count = item.count + 1
                                     if (count >= item.target && autoRestart) {
                                         next[index] = item.copy(count = 0)
@@ -479,7 +469,6 @@ private fun AzkarMuslimApp() {
         if (showSettings) AlertDialog(onDismissRequest = { showSettings=false }, title = { Text("الإعدادات") }, text = {
             Column {
                 Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) { Text("إعادة العداد تلقائياً بعد اكتمال العدد", Modifier.weight(1f)); Switch(autoRestart, { autoRestart=it; prefs.edit().putBoolean("auto_restart",it).apply() }) }
-                Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) { Text("اهتزاز عند الضغط", Modifier.weight(1f)); Switch(vibration, { vibration=it; prefs.edit().putBoolean("vibration",it).apply() }) }
                 Spacer(Modifier.height(12.dp))
                 Text("إدارة خانات الصور", fontWeight = FontWeight.Bold, color = DeepGreen)
                 OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("اسم الخانة الجديدة") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
@@ -591,33 +580,6 @@ private fun StoredPhoto(path: String, modifier: Modifier = Modifier) {
         contentScale = ContentScale.Fit
     )
     else Box(modifier.background(Color(0xFFF4F4F4), RoundedCornerShape(16.dp)), contentAlignment=Alignment.Center) { Text("تعذر عرض الصورة", color=Color.Gray) }
-}
-
-private fun vibrateDevice(context: Context, view: View) {
-    // Trigger Android's built-in tap haptic as a fallback on devices that suppress app vibration.
-    try {
-        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-    } catch (_: Exception) {
-        // Continue with the vibrator service below.
-    }
-    try {
-        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
-        } else {
-            @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-        }
-        if (vibrator != null && vibrator.hasVibrator()) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(45L, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(45L)
-            }
-        }
-    } catch (_: Exception) {
-        // Vibration is optional; counting must continue if the device has no vibrator.
-    }
 }
 
 private fun loadLegacyTextItems(prefs: android.content.SharedPreferences): List<Dhikr> {
