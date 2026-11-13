@@ -41,6 +41,8 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -106,6 +108,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AzkarMuslimApp() {
     val context = LocalContext.current
@@ -118,7 +121,7 @@ private fun AzkarMuslimApp() {
     var newCategoryName by remember { mutableStateOf("") }
     var renameCategoryId by remember { mutableStateOf<String?>(null) }
     var renameCategoryName by remember { mutableStateOf("") }
-    var tab by remember { mutableIntStateOf(0) }
+    var tab by remember { mutableIntStateOf(1) }
     var selectedText by remember { mutableIntStateOf(0) }
     var selectedPhoto by remember { mutableIntStateOf(0) }
     var editorOpen by remember { mutableStateOf(false) }
@@ -261,15 +264,20 @@ private fun AzkarMuslimApp() {
                 Spacer(Modifier.height(10.dp))
                 Card(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF1)), border = BorderStroke(1.dp, Gold), elevation = CardDefaults.cardElevation(8.dp)) {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilterChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("ذكر مكتوب") }, leadingIcon = { Icon(Icons.Default.TextFields, null) }, modifier = Modifier.weight(1f))
-                            FilterChip(selected = tab == 1 && selectedCategoryId == "builtin_photos", onClick = { tab = 1; selectedCategoryId = "builtin_photos"; selectedPhoto = 0 }, label = { Text("صور ذكر") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, modifier = Modifier.weight(1f))
-                        }
-                        if (tab == 1) {
-                            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                photoCategories.filterNot { it.builtIn }.forEach { category ->
-                                    FilterChip(selected = selectedCategoryId == category.id, onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 }, label = { Text(category.name, maxLines = 1) })
-                                }
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(5.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            maxItemsInEachRow = 4
+                        ) {
+                            photoCategories.forEach { category ->
+                                FilterChip(
+                                    selected = selectedCategoryId == category.id,
+                                    onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
+                                    label = { Text(category.name, maxLines = 1, fontSize = 11.sp) },
+                                    modifier = Modifier.height(34.dp),
+                                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
+                                )
                             }
                         }
                         Spacer(Modifier.height(10.dp))
