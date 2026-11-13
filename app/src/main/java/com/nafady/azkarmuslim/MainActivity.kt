@@ -153,7 +153,7 @@ private fun AzkarMuslimApp() {
                             else {
                                 val index = selectedText.coerceIn(textItems.indices)
                                 val item = textItems[index]
-                                Text("✦  عدد الأذكار المكتوبة: ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
+                                Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.weight(1f))
                                 Box(
                                     modifier = Modifier.fillMaxWidth().weight(2f),
@@ -192,6 +192,14 @@ private fun AzkarMuslimApp() {
                                     TextButton(onClick = { editingId = item.id; editText = item.text; editTarget = item.target.toString().toArabicDigits(); editorOpen = true }) { Icon(Icons.Default.Edit, null); Text("تعديل") }
                                     TextButton(onClick = { saveTexts(textItems.filterNot { it.id == item.id }) }) { Icon(Icons.Default.Delete, null); Text("حذف") }
                                 }
+                                OutlinedButton(
+                                    onClick = { saveTexts(textItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("تصفير العداد")
+                                }
                             }
                         } else {
                             if (photoItems.isEmpty()) {
@@ -200,7 +208,7 @@ private fun AzkarMuslimApp() {
                             } else {
                                 val index = selectedPhoto.coerceIn(photoItems.indices)
                                 val item = photoItems[index]
-                                Text("✦  عدد الأذكار المصورة: ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold)
+                                Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(6.dp))
                                 StoredPhoto(item.path, Modifier.weight(1f).fillMaxWidth())
                                 Spacer(Modifier.height(8.dp))
@@ -225,6 +233,14 @@ private fun AzkarMuslimApp() {
                                     TextButton(onClick = { photoPicker.launch("image/*") }) { Icon(Icons.Default.Add, null); Text("إضافة صورة") }
                                     TextButton(onClick = { targetPhotoValue=item.target.toString().toArabicDigits(); pendingPhotoPath=item.path; photoTargetDialog=true }) { Icon(Icons.Default.Edit, null); Text("العدد") }
                                     TextButton(onClick = { File(item.path).delete(); savePhotos(photoItems.filterNot { it.id == item.id }) }) { Icon(Icons.Default.Delete, null); Text("حذف") }
+                                }
+                                OutlinedButton(
+                                    onClick = { savePhotos(photoItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Icon(Icons.Default.Refresh, contentDescription = null)
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("تصفير العداد")
                                 }
                             }
                         }
