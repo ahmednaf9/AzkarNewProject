@@ -27,6 +27,11 @@ import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.consume
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -200,7 +205,18 @@ private fun AzkarMuslimApp() {
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().weight(2f),
+                                    modifier = Modifier.fillMaxWidth().weight(2f).pointerInput(selectedText, textItems.size) {
+                                        var dragDistance = 0f
+                                        detectVerticalDragGestures(
+                                            onVerticalDrag = { change, amount -> change.consume(); dragDistance += amount },
+                                            onDragEnd = {
+                                                if (dragDistance < -60f && textItems.isNotEmpty()) selectedText = (selectedText + 1) % textItems.size
+                                                else if (dragDistance > 60f && textItems.isNotEmpty()) selectedText = (selectedText - 1 + textItems.size) % textItems.size
+                                                dragDistance = 0f
+                                            },
+                                            onDragCancel = { dragDistance = 0f }
+                                        )
+                                    },
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -261,7 +277,21 @@ private fun AzkarMuslimApp() {
                                     }
                                 }
                                 Spacer(Modifier.height(6.dp))
-                                StoredPhoto(item.path, Modifier.weight(1f).fillMaxWidth())
+                                Box(
+                                    Modifier.weight(1f).fillMaxWidth().pointerInput(selectedPhoto, photoItems.size) {
+                                        var dragDistance = 0f
+                                        detectVerticalDragGestures(
+                                            onVerticalDrag = { change, amount -> change.consume(); dragDistance += amount },
+                                            onDragEnd = {
+                                                if (dragDistance < -60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
+                                                else if (dragDistance > 60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
+                                                dragDistance = 0f
+                                            },
+                                            onDragCancel = { dragDistance = 0f }
+                                        )
+                                    },
+                                    contentAlignment = Alignment.Center
+                                ) { StoredPhoto(item.path, Modifier.fillMaxSize()) }
                                 Spacer(Modifier.height(8.dp))
                                 Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
@@ -383,7 +413,21 @@ private fun StoredPhoto(path: String, modifier: Modifier = Modifier) {
     val bitmap by produceState<android.graphics.Bitmap?>(initialValue=null, key1=path) {
         value=withContext(Dispatchers.IO) { try { BitmapFactory.decodeFile(path) } catch (_: Exception) { null } }
     }
-    if(bitmap != null) Image(bitmap!!.asImageBitmap(), contentDescription="صورة الذكر", modifier=modifier, contentScale=ContentScale.Fit)
+    var scale by remember(path) { mutableFloatStateOf(1f) }
+    var offsetX by remember(path) { mutableFloatStateOf(0f) }
+    var offsetY by remember(path) { mutableFloatStateOf(0f) }
+    val zoomState = rememberTransformableState { zoomChange, panChange, _ ->
+        scale = (scale * zoomChange).coerceIn(1f, 5f)
+        offsetX += panChange.x
+        offsetY += panChange.y
+        if (scale <= 1f) { offsetX = 0f; offsetY = 0f }
+    }
+    if(bitmap != null) Image(
+        bitmap!!.asImageBitmap(),
+        contentDescription = "صورة الذكر - يمكن تكبيرها بإصبعين",
+        modifier = modifier.graphicsLayer(scaleX = scale, scaleY = scale, translationX = offsetX, translationY = offsetY).transformable(zoomState),
+        contentScale = ContentScale.Fit
+    )
     else Box(modifier.background(Color(0xFFF4F4F4), RoundedCornerShape(16.dp)), contentAlignment=Alignment.Center) { Text("تعذر عرض الصورة", color=Color.Gray) }
 }
 
