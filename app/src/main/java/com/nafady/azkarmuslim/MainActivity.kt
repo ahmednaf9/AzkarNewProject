@@ -155,7 +155,7 @@ private fun AzkarMuslimApp() {
                                         textAlign = TextAlign.Center,
                                         fontSize = 25.sp,
                                         lineHeight = 38.sp,
-                                        fontWeight = FontWeight.Medium,
+                                        fontWeight = FontWeight.Bold,
                                         color = Color(0xFF151515)
                                     )
                                 }
