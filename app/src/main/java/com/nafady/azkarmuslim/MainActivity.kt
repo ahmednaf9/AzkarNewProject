@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image as ImageSymbol
 import androidx.compose.material.icons.filled.Refresh
@@ -107,6 +108,7 @@ private fun AzkarMuslimApp() {
     var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
     var autoRestart by remember { mutableStateOf(prefs.getBoolean("auto_restart", true)) }
     var message by remember { mutableStateOf<String?>(null) }
+    var menuExpanded by remember { mutableStateOf(false) }
 
     fun saveTexts(list: List<Dhikr>) {
         textItems = list
@@ -179,7 +181,20 @@ private fun AzkarMuslimApp() {
                             else {
                                 val index = selectedText.coerceIn(textItems.indices)
                                 val item = textItems[index]
-                                Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Box {
+                                        IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الذكر", tint = DeepGreen) }
+                                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                            DropdownMenuItem(text = { Text("إضافة ذكر") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true })
+                                            DropdownMenuItem(text = { Text("تعديل الذكر") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; editingId = item.id; editText = item.text; editTarget = item.target.toString().toArabicDigits(); editorOpen = true })
+                                            DropdownMenuItem(text = { Text("حذف الذكر") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; saveTexts(textItems.filterNot { it.id == item.id }) })
+                                        }
+                                    }
+                                    Spacer(Modifier.weight(1f))
+                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
+                                    Spacer(Modifier.weight(1f))
+                                    Spacer(Modifier.width(48.dp))
+                                }
                                 Spacer(Modifier.weight(1f))
                                 Box(
                                     modifier = Modifier.fillMaxWidth().weight(2f),
@@ -213,11 +228,6 @@ private fun AzkarMuslimApp() {
                                     OutlinedButton(onClick = { selectedText = (index - 1 + textItems.size) % textItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
                                     OutlinedButton(onClick = { selectedText = (index + 1) % textItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
                                 }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                    TextButton(onClick = { editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true }) { Icon(Icons.Default.Add, null); Text("إضافة ذكر") }
-                                    TextButton(onClick = { editingId = item.id; editText = item.text; editTarget = item.target.toString().toArabicDigits(); editorOpen = true }) { Icon(Icons.Default.Edit, null); Text("تعديل") }
-                                    TextButton(onClick = { saveTexts(textItems.filterNot { it.id == item.id }) }) { Icon(Icons.Default.Delete, null); Text("حذف") }
-                                }
                                 OutlinedButton(
                                     onClick = { saveTexts(textItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
                                     modifier = Modifier.fillMaxWidth()
@@ -235,7 +245,21 @@ private fun AzkarMuslimApp() {
                             } else {
                                 val index = selectedPhoto.coerceIn(photoItems.indices)
                                 val item = photoItems[index]
-                                Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold)
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Box {
+                                        IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الصورة", tint = Green) }
+                                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                            DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
+                                            DropdownMenuItem(text = { Text("إضافة صورة") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; photoPicker.launch("image/*") })
+                                            DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = item.target.toString().toArabicDigits(); pendingPhotoPath = item.path; photoTargetDialog = true })
+                                            DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); savePhotos(photoItems.filterNot { it.id == item.id }) })
+                                        }
+                                    }
+                                    Spacer(Modifier.weight(1f))
+                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold)
+                                    Spacer(Modifier.weight(1f))
+                                    Spacer(Modifier.width(48.dp))
+                                }
                                 Spacer(Modifier.height(6.dp))
                                 StoredPhoto(item.path, Modifier.weight(1f).fillMaxWidth())
                                 Spacer(Modifier.height(8.dp))
@@ -255,16 +279,6 @@ private fun AzkarMuslimApp() {
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                                     OutlinedButton(onClick = { selectedPhoto=(index-1+photoItems.size)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
                                     OutlinedButton(onClick = { selectedPhoto=(index+1)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
-                                }
-                                OutlinedButton(onClick = { folderPicker.launch(null) }, modifier = Modifier.fillMaxWidth()) {
-                                    Icon(Icons.Default.ImageSymbol, null)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("تحميل مجلد صور كامل")
-                                }
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                    TextButton(onClick = { photoPicker.launch("image/*") }) { Icon(Icons.Default.Add, null); Text("إضافة صورة") }
-                                    TextButton(onClick = { targetPhotoValue=item.target.toString().toArabicDigits(); pendingPhotoPath=item.path; photoTargetDialog=true }) { Icon(Icons.Default.Edit, null); Text("العدد") }
-                                    TextButton(onClick = { File(item.path).delete(); savePhotos(photoItems.filterNot { it.id == item.id }) }) { Icon(Icons.Default.Delete, null); Text("حذف") }
                                 }
                                 OutlinedButton(
                                     onClick = { savePhotos(photoItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
