@@ -209,13 +209,6 @@ private fun AzkarMuslimApp() {
                             detectTapGestures(onDoubleTap = { photoFullscreen = false })
                         }
                         .pointerInput(selectedPhoto, photoItems.size) {
-                            detectVerticalDragGestures(
-                                onVerticalDrag = { change, _ -> change.consume() },
-                                onDragEnd = { },
-                                onDragCancel = { }
-                            )
-                        }
-                        .pointerInput(selectedPhoto, photoItems.size) {
                             var dragDistance = 0f
                             detectVerticalDragGestures(
                                 onVerticalDrag = { change, amount ->
