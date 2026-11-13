@@ -263,12 +263,12 @@ private fun AzkarMuslimApp() {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("ذكر مكتوب") }, leadingIcon = { Icon(Icons.Default.TextFields, null) }, modifier = Modifier.weight(1f))
-                            FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("صور ذكر") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, modifier = Modifier.weight(1f))
+                            FilterChip(selected = tab == 1 && selectedCategoryId == "builtin_photos", onClick = { tab = 1; selectedCategoryId = "builtin_photos"; selectedPhoto = 0 }, label = { Text("صور ذكر") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, modifier = Modifier.weight(1f))
                         }
                         if (tab == 1) {
                             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                                photoCategories.forEach { category ->
-                                    FilterChip(selected = selectedCategoryId == category.id, onClick = { selectedCategoryId = category.id; selectedPhoto = 0 }, label = { Text(category.name, maxLines = 1) })
+                                photoCategories.filterNot { it.builtIn }.forEach { category ->
+                                    FilterChip(selected = selectedCategoryId == category.id, onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 }, label = { Text(category.name, maxLines = 1) })
                                 }
                             }
                         }
