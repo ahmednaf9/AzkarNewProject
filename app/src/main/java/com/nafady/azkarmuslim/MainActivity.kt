@@ -64,6 +64,14 @@ private val PaleGreen = Color(0xFFFFF4D9)
 private val Gold = Color(0xFFD8AE52)
 private val AppBackground = Color(0xFFF3E8CF)
 
+private fun String.toArabicDigits(): String = map { ch ->
+    if (ch in '0'..'9') ('٠'.code + (ch - '0')).toChar() else ch
+}.joinToString("")
+
+private fun String.toEnglishDigits(): String = map { ch ->
+    if (ch in '٠'..'٩') ('0'.code + (ch - '٠')).toChar() else ch
+}.joinToString("")
+
 private data class Dhikr(val id: String, val text: String, val target: Int, val count: Int = 0)
 private data class PhotoDhikr(val id: String, val path: String, val target: Int, val count: Int = 0)
 
@@ -87,10 +95,10 @@ private fun AzkarMuslimApp() {
     var editorOpen by remember { mutableStateOf(false) }
     var editingId by remember { mutableStateOf<String?>(null) }
     var editText by remember { mutableStateOf("") }
-    var editTarget by remember { mutableStateOf("33") }
+    var editTarget by remember { mutableStateOf("٣٣") }
     var photoTargetDialog by remember { mutableStateOf(false) }
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
-    var targetPhotoValue by remember { mutableStateOf("33") }
+    var targetPhotoValue by remember { mutableStateOf("٣٣") }
     var showList by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
@@ -115,7 +123,7 @@ private fun AzkarMuslimApp() {
                 context.contentResolver.openInputStream(uri)?.use { input -> destination.outputStream().use { output -> input.copyTo(output) } }
                 if (destination.exists() && destination.length() > 0) {
                     pendingPhotoPath = destination.absolutePath
-                    targetPhotoValue = "33"
+                    targetPhotoValue = "٣٣"
                     photoTargetDialog = true
                 } else message = "تعذر حفظ الصورة"
             } catch (_: Exception) { message = "تعذر قراءة الصورة" }
@@ -143,7 +151,7 @@ private fun AzkarMuslimApp() {
                             else {
                                 val index = selectedText.coerceIn(textItems.indices)
                                 val item = textItems[index]
-                                Text("✦  عدد الأذكار المكتوبة: ${textItems.size}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
+                                Text("✦  عدد الأذكار المكتوبة: ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.weight(1f))
                                 Box(
                                     modifier = Modifier.fillMaxWidth().weight(2f),
@@ -178,8 +186,8 @@ private fun AzkarMuslimApp() {
                                     OutlinedButton(onClick = { selectedText = (index + 1) % textItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
                                 }
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                                    TextButton(onClick = { editingId = null; editText = ""; editTarget = "33"; editorOpen = true }) { Icon(Icons.Default.Add, null); Text("إضافة ذكر") }
-                                    TextButton(onClick = { editingId = item.id; editText = item.text; editTarget = item.target.toString(); editorOpen = true }) { Icon(Icons.Default.Edit, null); Text("تعديل") }
+                                    TextButton(onClick = { editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true }) { Icon(Icons.Default.Add, null); Text("إضافة ذكر") }
+                                    TextButton(onClick = { editingId = item.id; editText = item.text; editTarget = item.target.toString().toArabicDigits(); editorOpen = true }) { Icon(Icons.Default.Edit, null); Text("تعديل") }
                                     TextButton(onClick = { saveTexts(textItems.filterNot { it.id == item.id }) }) { Icon(Icons.Default.Delete, null); Text("حذف") }
                                 }
                             }
@@ -190,7 +198,7 @@ private fun AzkarMuslimApp() {
                             } else {
                                 val index = selectedPhoto.coerceIn(photoItems.indices)
                                 val item = photoItems[index]
-                                Text("✦  عدد الأذكار المصورة: ${photoItems.size}  ✦", color = Green, fontWeight = FontWeight.Bold)
+                                Text("✦  عدد الأذكار المصورة: ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(6.dp))
                                 StoredPhoto(item.path, Modifier.weight(1f).fillMaxWidth())
                                 Spacer(Modifier.height(8.dp))
@@ -213,7 +221,7 @@ private fun AzkarMuslimApp() {
                                 }
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                     TextButton(onClick = { photoPicker.launch("image/*") }) { Icon(Icons.Default.Add, null); Text("إضافة صورة") }
-                                    TextButton(onClick = { targetPhotoValue=item.target.toString(); pendingPhotoPath=item.path; photoTargetDialog=true }) { Icon(Icons.Default.Edit, null); Text("العدد") }
+                                    TextButton(onClick = { targetPhotoValue=item.target.toString().toArabicDigits(); pendingPhotoPath=item.path; photoTargetDialog=true }) { Icon(Icons.Default.Edit, null); Text("العدد") }
                                     TextButton(onClick = { File(item.path).delete(); savePhotos(photoItems.filterNot { it.id == item.id }) }) { Icon(Icons.Default.Delete, null); Text("حذف") }
                                 }
                             }
@@ -226,10 +234,10 @@ private fun AzkarMuslimApp() {
         if (editorOpen) AlertDialog(onDismissRequest = { editorOpen = false }, title = { Text(if (editingId == null) "إضافة ذكر جديد" else "تعديل الذكر") }, text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(value = editText, onValueChange = { editText = it }, label = { Text("نص الذكر") }, modifier = Modifier.fillMaxWidth(), minLines = 2)
-                OutlinedTextField(value = editTarget, onValueChange = { editTarget = it.filter(Char::isDigit).take(7) }, label = { Text("عدد التكرار") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = editTarget, onValueChange = { editTarget = it.filter(Char::isDigit).toArabicDigits().take(7) }, label = { Text("عدد التكرار") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
             }
         }, confirmButton = { TextButton(onClick = {
-            val target = editTarget.toIntOrNull()?.coerceAtLeast(1)
+            val target = editTarget.toEnglishDigits().toIntOrNull()?.coerceAtLeast(1)
             if (editText.isNotBlank() && target != null) {
                 val list = textItems.toMutableList()
                 if (editingId == null) { list.add(Dhikr(UUID.randomUUID().toString(), editText.trim(), target)); selectedText = list.lastIndex }
@@ -239,9 +247,9 @@ private fun AzkarMuslimApp() {
         }) { Text("حفظ") } }, dismissButton = { TextButton(onClick = { editorOpen = false }) { Text("إلغاء") } })
 
         if (photoTargetDialog) AlertDialog(onDismissRequest = { photoTargetDialog = false; pendingPhotoPath = null }, title = { Text("عدد مرات تكرار الصورة") }, text = {
-            OutlinedTextField(value = targetPhotoValue, onValueChange = { targetPhotoValue=it.filter(Char::isDigit).take(7) }, label = { Text("العدد المطلوب") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            OutlinedTextField(value = targetPhotoValue, onValueChange = { targetPhotoValue=it.filter(Char::isDigit).toArabicDigits().take(7) }, label = { Text("العدد المطلوب") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
         }, confirmButton = { TextButton(onClick = {
-            val value=targetPhotoValue.toIntOrNull()?.coerceAtLeast(1)
+            val value=targetPhotoValue.toEnglishDigits().toIntOrNull()?.coerceAtLeast(1)
             val path=pendingPhotoPath
             if(value != null && path != null) {
                 val list=photoItems.toMutableList(); val existing=list.indexOfFirst { it.path == path }
@@ -252,7 +260,7 @@ private fun AzkarMuslimApp() {
         }) { Text("حفظ") } }, dismissButton = { TextButton(onClick = { photoTargetDialog=false; pendingPhotoPath=null }) { Text("إلغاء") } })
 
         if (showList) AlertDialog(onDismissRequest = { showList=false }, title = { Text("قائمة الأذكار المكتوبة") }, text = {
-            LazyColumn { itemsIndexed(textItems) { i, item -> Row(Modifier.fillMaxWidth().clickable { selectedText=i; tab=0; showList=false }.padding(vertical=8.dp), verticalAlignment=Alignment.CenterVertically) { Text(item.text, Modifier.weight(1f), maxLines=2); Text("${item.target}", color=Green, fontWeight=FontWeight.Bold) } } }
+            LazyColumn { itemsIndexed(textItems) { i, item -> Row(Modifier.fillMaxWidth().clickable { selectedText=i; tab=0; showList=false }.padding(vertical=8.dp), verticalAlignment=Alignment.CenterVertically) { Text(item.text, Modifier.weight(1f), maxLines=2); Text(item.target.toString().toArabicDigits(), color=Green, fontWeight=FontWeight.Bold) } } }
         }, confirmButton = { TextButton(onClick = { showList=false }) { Text("إغلاق") } })
 
         if (showSettings) AlertDialog(onDismissRequest = { showSettings=false }, title = { Text("الإعدادات") }, text = {
@@ -281,14 +289,14 @@ private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = count.toString(),
+                text = count.toString().toArabicDigits(),
                 fontSize = 35.sp,
                 color = DeepGreen,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = "/ $target",
+                text = "/ ${target.toString().toArabicDigits()}",
                 fontSize = 19.sp,
                 color = Color.Black,
                 fontWeight = FontWeight.Bold,
