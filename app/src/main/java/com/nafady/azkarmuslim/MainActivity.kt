@@ -145,10 +145,20 @@ private fun AzkarMuslimApp() {
                                 val item = textItems[index]
                                 Text("✦  عدد الأذكار المكتوبة: ${textItems.size}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.weight(1f))
-                                Text("وَاذْكُرُوا اللَّهَ كَثِيرًا", color = DeepGreen, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.background(Color(0xFFF4E4BD), RoundedCornerShape(18.dp)).border(1.dp, Gold, RoundedCornerShape(18.dp)).padding(horizontal = 18.dp, vertical = 11.dp))
-                                Spacer(Modifier.height(22.dp))
-                                Text(item.text, modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp), textAlign = TextAlign.Center, fontSize = 27.sp, lineHeight = 43.sp, fontWeight = FontWeight.Bold, color = Color(0xFF151515))
-                                Spacer(Modifier.height(22.dp))
+                                Box(
+                                    modifier = Modifier.fillMaxWidth().weight(2f),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        item.text,
+                                        modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                                        textAlign = TextAlign.Center,
+                                        fontSize = 25.sp,
+                                        lineHeight = 38.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF151515)
+                                    )
+                                }
                                 Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
                                     val next = textItems.toMutableList()
