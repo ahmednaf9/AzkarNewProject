@@ -41,8 +41,6 @@ import androidx.compose.foundation.gestures.transformable
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -108,7 +106,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AzkarMuslimApp() {
     val context = LocalContext.current
@@ -264,20 +261,20 @@ private fun AzkarMuslimApp() {
                 Spacer(Modifier.height(10.dp))
                 Card(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF1)), border = BorderStroke(1.dp, Gold), elevation = CardDefaults.cardElevation(8.dp)) {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        FlowRow(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(5.dp),
-                            verticalArrangement = Arrangement.spacedBy(2.dp),
-                            maxItemsInEachRow = 4
-                        ) {
-                            photoCategories.forEach { category ->
-                                FilterChip(
-                                    selected = selectedCategoryId == category.id,
-                                    onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
-                                    label = { Text(category.name, maxLines = 1, fontSize = 11.sp) },
-                                    modifier = Modifier.height(34.dp),
-                                    contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
-                                )
+                        photoCategories.chunked(4).forEach { categoryRow ->
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                categoryRow.forEach { category ->
+                                    FilterChip(
+                                        selected = selectedCategoryId == category.id,
+                                        onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
+                                        label = { Text(category.name, maxLines = 1, fontSize = 10.sp) },
+                                        modifier = Modifier.weight(1f).height(32.dp)
+                                    )
+                                }
+                                repeat(4 - categoryRow.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                         Spacer(Modifier.height(10.dp))
