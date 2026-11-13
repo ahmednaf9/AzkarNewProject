@@ -3,7 +3,11 @@ package com.nafady.azkarmuslim
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -144,6 +148,7 @@ private fun AzkarMuslimApp() {
                                 Counter(item.count, item.target)
                                 Spacer(Modifier.height(14.dp))
                                 Button(onClick = {
+                                    if (vibration) vibrateDevice(context)
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
                                     if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0); message = "اكتمل الذكر، وعاد العداد إلى الصفر" }
@@ -176,6 +181,7 @@ private fun AzkarMuslimApp() {
                                 Counter(item.count, item.target)
                                 Spacer(Modifier.height(12.dp))
                                 Button(onClick = {
+                                    if (vibration) vibrateDevice(context)
                                     val next = photoItems.toMutableList(); val count = item.count + 1
                                     if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0); message = "اكتمل الذكر، وعاد العداد إلى الصفر" }
                                     else next[index] = item.copy(count = count.coerceAtMost(item.target))
@@ -267,6 +273,25 @@ private fun StoredPhoto(path: String, modifier: Modifier = Modifier) {
     }
     if(bitmap != null) Image(bitmap!!.asImageBitmap(), contentDescription="صورة الذكر", modifier=modifier, contentScale=ContentScale.Fit)
     else Box(modifier.background(Color(0xFFF4F4F4), RoundedCornerShape(16.dp)), contentAlignment=Alignment.Center) { Text("تعذر عرض الصورة", color=Color.Gray) }
+}
+
+private fun vibrateDevice(context: Context) {
+    try {
+        val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            context.getSystemService(VibratorManager::class.java).defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(25L, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(25L)
+        }
+    } catch (_: Exception) {
+        // Vibration is optional; counting must continue if the device has no vibrator.
+    }
 }
 
 private fun loadTextItems(prefs: android.content.SharedPreferences): List<Dhikr> {
