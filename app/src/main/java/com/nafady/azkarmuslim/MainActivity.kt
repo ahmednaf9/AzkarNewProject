@@ -22,6 +22,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.consume
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -181,8 +187,9 @@ private fun AzkarMuslimApp() {
                             else {
                                 val index = selectedText.coerceIn(textItems.indices)
                                 val item = textItems[index]
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Box {
+                                Box(Modifier.fillMaxWidth()) {
+                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
+                                    Box(Modifier.align(Alignment.CenterStart)) {
                                         IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الذكر", tint = DeepGreen) }
                                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                                             DropdownMenuItem(text = { Text("إضافة ذكر") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true })
@@ -190,10 +197,6 @@ private fun AzkarMuslimApp() {
                                             DropdownMenuItem(text = { Text("حذف الذكر") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; saveTexts(textItems.filterNot { it.id == item.id }) })
                                         }
                                     }
-                                    Spacer(Modifier.weight(1f))
-                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
-                                    Spacer(Modifier.weight(1f))
-                                    Spacer(Modifier.width(48.dp))
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Box(
@@ -245,8 +248,9 @@ private fun AzkarMuslimApp() {
                             } else {
                                 val index = selectedPhoto.coerceIn(photoItems.indices)
                                 val item = photoItems[index]
-                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                                    Box {
+                                Box(Modifier.fillMaxWidth()) {
+                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
+                                    Box(Modifier.align(Alignment.CenterStart)) {
                                         IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الصورة", tint = Green) }
                                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                                             DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
@@ -255,10 +259,6 @@ private fun AzkarMuslimApp() {
                                             DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); savePhotos(photoItems.filterNot { it.id == item.id }) })
                                         }
                                     }
-                                    Spacer(Modifier.weight(1f))
-                                    Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold)
-                                    Spacer(Modifier.weight(1f))
-                                    Spacer(Modifier.width(48.dp))
                                 }
                                 Spacer(Modifier.height(6.dp))
                                 StoredPhoto(item.path, Modifier.weight(1f).fillMaxWidth())
