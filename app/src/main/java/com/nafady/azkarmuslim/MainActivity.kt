@@ -149,7 +149,7 @@ private fun AzkarMuslimApp() {
                                     if (vibration) vibrateDevice(context)
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
-                                    if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0); message = "اكتمل الذكر، وعاد العداد إلى الصفر" }
+                                    if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0) }
                                     else next[index] = item.copy(count = count.coerceAtMost(item.target))
                                     saveTexts(next)
                                 }
@@ -179,7 +179,7 @@ private fun AzkarMuslimApp() {
                                 Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
                                     val next = photoItems.toMutableList(); val count = item.count + 1
-                                    if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0); message = "اكتمل الذكر، وعاد العداد إلى الصفر" }
+                                    if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0) }
                                     else next[index] = item.copy(count = count.coerceAtMost(item.target))
                                     savePhotos(next)
                                 }
