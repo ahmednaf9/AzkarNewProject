@@ -246,10 +246,32 @@ private fun AzkarMuslimApp() {
 
 @Composable
 private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
-    Box(Modifier.size(174.dp).clickable(onClick = onIncrement).background(Gold, CircleShape).padding(6.dp).background(DeepGreen, CircleShape).padding(4.dp).background(Color(0xFFFFF6DF), CircleShape), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment=Alignment.CenterHorizontally) {
-            Text(count.toString(), fontSize=54.sp, color=DeepGreen, fontWeight=FontWeight.ExtraBold)
-            Text("/ $target", fontSize=25.sp, color=Color.Black, fontWeight=FontWeight.Bold)
+    Box(
+        modifier = Modifier
+            .size(128.dp)
+            .clickable(onClick = onIncrement)
+            .background(Gold, CircleShape)
+            .padding(4.dp)
+            .background(DeepGreen, CircleShape)
+            .padding(3.dp)
+            .background(Color(0xFFFFF6DF), CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = count.toString(),
+                fontSize = 40.sp,
+                color = DeepGreen,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = "/ $target",
+                fontSize = 19.sp,
+                color = Color.Black,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
