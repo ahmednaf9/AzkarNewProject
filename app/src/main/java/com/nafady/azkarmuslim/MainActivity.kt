@@ -264,6 +264,7 @@ private fun AzkarMuslimApp() {
                 Card(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF1)), border = BorderStroke(1.dp, Gold), elevation = CardDefaults.cardElevation(8.dp)) {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            // RTL layout: the first category (صور ذكر) starts at the far right.
                             photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.chunked(4).forEach { categoryRow ->
                                 Row(
                                     Modifier.fillMaxWidth(),
@@ -273,7 +274,14 @@ private fun AzkarMuslimApp() {
                                         FilterChip(
                                             selected = selectedCategoryId == category.id,
                                             onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
-                                            label = { Text(category.name, maxLines = 1, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                            label = {
+                                                Text(
+                                                    category.name,
+                                                    maxLines = 1,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.ExtraBold
+                                                )
+                                            },
                                             modifier = Modifier.weight(1f).height(32.dp)
                                         )
                                     }
