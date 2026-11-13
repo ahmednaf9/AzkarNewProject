@@ -11,7 +11,9 @@ import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.view.View
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -22,6 +24,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -54,12 +57,14 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -120,6 +125,7 @@ private fun AzkarMuslimApp() {
     var autoRestart by remember { mutableStateOf(prefs.getBoolean("auto_restart", true)) }
     var message by remember { mutableStateOf<String?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
+    var photoFullscreen by remember { mutableStateOf(false) }
 
     fun saveTexts(list: List<Dhikr>) {
         textItems = list
@@ -171,8 +177,64 @@ private fun AzkarMuslimApp() {
         }
     }
 
+    val rootView = LocalView.current
+    DisposableEffect(photoFullscreen) {
+        val activityWindow = (context as? ComponentActivity)?.window
+        val decorView = activityWindow?.decorView
+        val previousVisibility = decorView?.systemUiVisibility ?: 0
+        if (photoFullscreen && decorView != null) {
+            decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    or View.SYSTEM_UI_FLAG_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                )
+        }
+        onDispose {
+            if (decorView != null) decorView.systemUiVisibility = previousVisibility
+        }
+    }
+    BackHandler(enabled = photoFullscreen) { photoFullscreen = false }
+
     MaterialTheme(colorScheme = lightColorScheme(primary = Green, secondary = DeepGreen, background = AppBackground, surface = Color(0xFFFFFBF1))) {
-        Scaffold(containerColor = AppBackground, snackbarHost = { SnackbarHost(remember { SnackbarHostState() }) }) { padding ->
+        Scaffold(containerColor = if (photoFullscreen) Color.Black else AppBackground, snackbarHost = { SnackbarHost(remember { SnackbarHostState() }) }) { padding ->
+            if (photoFullscreen && tab == 1 && photoItems.isNotEmpty()) {
+                val fullIndex = selectedPhoto.coerceIn(photoItems.indices)
+                val fullItem = photoItems[fullIndex]
+                Box(
+                    Modifier.fillMaxSize().background(Color.Black)
+                        .pointerInput(selectedPhoto, photoItems.size) {
+                            detectTapGestures(onDoubleTap = { photoFullscreen = false })
+                        }
+                        .pointerInput(selectedPhoto, photoItems.size) {
+                            detectVerticalDragGestures(
+                                onVerticalDrag = { change, _ -> change.consume() },
+                                onDragEnd = { },
+                                onDragCancel = { }
+                            )
+                        }
+                        .pointerInput(selectedPhoto, photoItems.size) {
+                            var dragDistance = 0f
+                            detectVerticalDragGestures(
+                                onVerticalDrag = { change, amount ->
+                                    change.consume()
+                                    dragDistance += amount
+                                },
+                                onDragEnd = {
+                                    if (dragDistance < -60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
+                                    else if (dragDistance > 60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
+                                    dragDistance = 0f
+                                },
+                                onDragCancel = { dragDistance = 0f }
+                            )
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    StoredPhoto(fullItem.path, Modifier.fillMaxSize())
+                }
+            } else {
             Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(DeepGreen, Color(0xFF176B49), AppBackground))).padding(padding).padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(Modifier.fillMaxWidth().background(DeepGreen, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 5.dp)) {
                     IconButton(onClick = { showSettings = true }, modifier = Modifier.align(Alignment.CenterStart)) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
@@ -299,7 +361,13 @@ private fun AzkarMuslimApp() {
                                         }
                                     },
                                     contentAlignment = Alignment.Center
-                                ) { StoredPhoto(item.path, Modifier.fillMaxSize()) }
+                                ) {
+                                    Box(Modifier.fillMaxSize().pointerInput(item.path) {
+                                        detectTapGestures(onDoubleTap = { photoFullscreen = true })
+                                    }) {
+                                        StoredPhoto(item.path, Modifier.fillMaxSize())
+                                    }
+                                }
                                 Spacer(Modifier.height(8.dp))
                                 Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
@@ -330,6 +398,7 @@ private fun AzkarMuslimApp() {
                         }
                     }
                 }
+            }
             }
         }
 
