@@ -111,6 +111,11 @@ private fun AzkarMuslimApp() {
     val database = remember { AzkarDatabase(context) }
     var textItems by remember { mutableStateOf(database.loadTextItems(prefs)) }
     var photoItems by remember { mutableStateOf(database.loadPhotoItems(prefs)) }
+    var photoCategories by remember { mutableStateOf(database.loadPhotoCategories()) }
+    var selectedCategoryId by remember { mutableStateOf("builtin_photos") }
+    var newCategoryName by remember { mutableStateOf("") }
+    var renameCategoryId by remember { mutableStateOf<String?>(null) }
+    var renameCategoryName by remember { mutableStateOf("") }
     var tab by remember { mutableIntStateOf(0) }
     var selectedText by remember { mutableIntStateOf(0) }
     var selectedPhoto by remember { mutableIntStateOf(0) }
@@ -127,6 +132,7 @@ private fun AzkarMuslimApp() {
     var message by remember { mutableStateOf<String?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
     var photoFullscreen by remember { mutableStateOf(false) }
+    val activePhotoItems = photoItems.filter { it.categoryId == selectedCategoryId }
 
     fun saveTexts(list: List<Dhikr>) {
         textItems = list
@@ -138,6 +144,10 @@ private fun AzkarMuslimApp() {
         database.savePhotos(list)
         selectedPhoto = selectedPhoto.coerceIn(0, (list.size - 1).coerceAtLeast(0))
     }
+    fun saveActivePhotos(list: List<PhotoDhikr>) {
+        savePhotos(photoItems.filterNot { it.categoryId == selectedCategoryId } + list.map { it.copy(categoryId = selectedCategoryId) })
+    }
+    fun refreshCategories() { photoCategories = database.loadPhotoCategories() }
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { treeUri: Uri? ->
         if (treeUri != null) {
@@ -152,12 +162,12 @@ private fun AzkarMuslimApp() {
                     try {
                         val destination = File(context.filesDir, "dhikr_${UUID.randomUUID()}.img")
                         context.contentResolver.openInputStream(imageFile.uri)?.use { input -> destination.outputStream().use { output -> input.copyTo(output) } }
-                        if (destination.exists() && destination.length() > 0) importedItems.add(PhotoDhikr(UUID.randomUUID().toString(), destination.absolutePath, 3)) else destination.delete()
+                        if (destination.exists() && destination.length() > 0) importedItems.add(PhotoDhikr(UUID.randomUUID().toString(), destination.absolutePath, 3, categoryId = selectedCategoryId)) else destination.delete()
                     } catch (_: Exception) { }
                 }
                 if (importedItems.isNotEmpty()) {
-                    val updated = photoItems + importedItems
-                    savePhotos(updated)
+                    val updated = activePhotoItems + importedItems
+                    saveActivePhotos(updated)
                     selectedPhoto = updated.size - importedItems.size
                     message = "تم تحميل ${importedItems.size.toString().toArabicDigits()} صورة بنجاح"
                 } else message = "لم يتم العثور على صور في المجلد المحدد"
@@ -201,9 +211,9 @@ private fun AzkarMuslimApp() {
 
     MaterialTheme(colorScheme = lightColorScheme(primary = Green, secondary = DeepGreen, background = AppBackground, surface = Color(0xFFFFFBF1))) {
         Scaffold(containerColor = if (photoFullscreen) Color.Black else AppBackground, snackbarHost = { SnackbarHost(remember { SnackbarHostState() }) }) { padding ->
-            if (photoFullscreen && tab == 1 && photoItems.isNotEmpty()) {
-                val fullIndex = selectedPhoto.coerceIn(photoItems.indices)
-                val fullItem = photoItems[fullIndex]
+            if (photoFullscreen && tab == 1 && activePhotoItems.isNotEmpty()) {
+                val fullIndex = selectedPhoto.coerceIn(activePhotoItems.indices)
+                val fullItem = activePhotoItems[fullIndex]
                 Box(
                     Modifier.fillMaxSize().background(Color.Black)
                         .pointerInput(selectedPhoto, photoItems.size) {
@@ -252,6 +262,13 @@ private fun AzkarMuslimApp() {
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             FilterChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("ذكر مكتوب") }, leadingIcon = { Icon(Icons.Default.TextFields, null) }, modifier = Modifier.weight(1f))
                             FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("صور ذكر") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, modifier = Modifier.weight(1f))
+                        }
+                        if (tab == 1) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                                photoCategories.forEach { category ->
+                                    FilterChip(selected = selectedCategoryId == category.id, onClick = { selectedCategoryId = category.id; selectedPhoto = 0 }, label = { Text(category.name, maxLines = 1) })
+                                }
+                            }
                         }
                         Spacer(Modifier.height(10.dp))
                         if (tab == 0) {
@@ -324,28 +341,28 @@ private fun AzkarMuslimApp() {
                                 }
                             }
                         } else {
-                            if (photoItems.isEmpty()) {
+                            if (activePhotoItems.isEmpty()) {
                                 EmptyState("لا توجد صور أذكار", "اختر صورة من هاتفك وأدخل عدد التكرار")
                                 Button(onClick = { photoPicker.launch("image/*") }) { Icon(Icons.Default.Add, null); Text("اختيار صورة") }
                                 OutlinedButton(onClick = { folderPicker.launch(null) }) { Icon(Icons.Default.ImageSymbol, null); Text("تحميل مجلد صور كامل") }
                             } else {
-                                val index = selectedPhoto.coerceIn(photoItems.indices)
-                                val item = photoItems[index]
+                                val index = selectedPhoto.coerceIn(activePhotoItems.indices)
+                                val item = activePhotoItems[index]
                                 Box(Modifier.fillMaxWidth()) {
-                                    Text("✦  ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
+                                    Text("✦  ${(index + 1).toArabicDigits()} / ${activePhotoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
                                     Box(Modifier.align(Alignment.CenterEnd)) {
                                         IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الصورة", tint = Green) }
                                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                                             DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
                                             DropdownMenuItem(text = { Text("إضافة صورة") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; photoPicker.launch("image/*") })
                                             DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = item.target.toString().toArabicDigits(); pendingPhotoPath = item.path; photoTargetDialog = true })
-                                            DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); savePhotos(photoItems.filterNot { it.id == item.id }) })
+                                            DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); saveActivePhotos(activePhotoItems.filterNot { it.id == item.id }) })
                                         }
                                     }
                                 }
                                 Spacer(Modifier.height(6.dp))
                                 Box(
-                                    Modifier.weight(1f).fillMaxWidth().pointerInput(selectedPhoto, photoItems.size) {
+                                    Modifier.weight(1f).fillMaxWidth().pointerInput(selectedPhoto, activePhotoItems.size) {
                                         awaitEachGesture {
                                             val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
                                             val pointerId = down.id
@@ -359,8 +376,8 @@ private fun AzkarMuslimApp() {
                                                 totalDrag += change.position.y - lastY
                                                 lastY = change.position.y
                                                 if (!change.pressed) {
-                                                    if (totalDrag < -60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
-                                                    else if (totalDrag > 60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
+                                                    if (totalDrag < -60f && activePhotoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % activePhotoItems.size
+                                                    else if (totalDrag > 60f && activePhotoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + activePhotoItems.size) % activePhotoItems.size
                                                     tracking = false
                                                 }
                                             }
@@ -377,23 +394,23 @@ private fun AzkarMuslimApp() {
                                 Spacer(Modifier.height(8.dp))
                                 Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
-                                    val next = photoItems.toMutableList(); val count = item.count + 1
+                                    val next = activePhotoItems.toMutableList(); val count = item.count + 1
                                     if (count >= item.target && autoRestart) {
                                         next[index] = item.copy(count = 0)
-                                        savePhotos(next)
-                                        selectedPhoto = (index + 1) % photoItems.size
+                                        saveActivePhotos(next)
+                                        selectedPhoto = (index + 1) % activePhotoItems.size
                                     } else {
                                         next[index] = item.copy(count = count.coerceAtMost(item.target))
-                                        savePhotos(next)
+                                        saveActivePhotos(next)
                                     }
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                    OutlinedButton(onClick = { selectedPhoto=(index-1+photoItems.size)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
-                                    OutlinedButton(onClick = { selectedPhoto=(index+1)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
+                                    OutlinedButton(onClick = { selectedPhoto=(index-1+activePhotoItems.size)%activePhotoItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
+                                    OutlinedButton(onClick = { selectedPhoto=(index+1)%activePhotoItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
                                 }
                                 OutlinedButton(
-                                    onClick = { savePhotos(photoItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
+                                    onClick = { saveActivePhotos(activePhotoItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Icon(Icons.Default.Refresh, contentDescription = null)
@@ -440,8 +457,51 @@ private fun AzkarMuslimApp() {
             Column {
                 Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) { Text("إعادة العداد تلقائياً بعد اكتمال العدد", Modifier.weight(1f)); Switch(autoRestart, { autoRestart=it; prefs.edit().putBoolean("auto_restart",it).apply() }) }
                 Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) { Text("اهتزاز عند الضغط", Modifier.weight(1f)); Switch(vibration, { vibration=it; prefs.edit().putBoolean("vibration",it).apply() }) }
+                Spacer(Modifier.height(12.dp))
+                Text("إدارة خانات الصور", fontWeight = FontWeight.Bold, color = DeepGreen)
+                OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("اسم الخانة الجديدة") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
+                Button(onClick = {
+                    val name = newCategoryName.trim()
+                    if (name.isNotEmpty() && photoCategories.none { it.name.equals(name, true) }) {
+                        val id = UUID.randomUUID().toString()
+                        database.addPhotoCategory(PhotoCategory(id, name))
+                        refreshCategories()
+                        selectedCategoryId = id
+                        selectedPhoto = 0
+                        tab = 1
+                        newCategoryName = ""
+                    }
+                }, modifier = Modifier.fillMaxWidth()) { Icon(Icons.Default.Add, null); Text("إضافة خانة") }
+                photoCategories.filterNot { it.builtIn }.forEach { category ->
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(category.name, Modifier.weight(1f))
+                        IconButton(onClick = { renameCategoryId = category.id; renameCategoryName = category.name }) { Icon(Icons.Default.Edit, "إعادة تسمية") }
+                        IconButton(onClick = {
+                            database.deletePhotoCategory(category.id)
+                            photoItems.filter { it.categoryId == category.id }.forEach { File(it.path).delete() }
+                            photoItems = photoItems.filterNot { it.categoryId == category.id }
+                            database.savePhotos(photoItems)
+                            if (selectedCategoryId == category.id) selectedCategoryId = "builtin_photos"
+                            selectedPhoto = 0
+                            refreshCategories()
+                        }) { Icon(Icons.Default.Delete, "حذف") }
+                    }
+                }
             }
         }, confirmButton = { TextButton(onClick = { showSettings=false }) { Text("تم") } })
+
+        if (renameCategoryId != null) AlertDialog(
+            onDismissRequest = { renameCategoryId = null },
+            title = { Text("إعادة تسمية الخانة") },
+            text = { OutlinedTextField(value = renameCategoryName, onValueChange = { renameCategoryName = it }, label = { Text("اسم الخانة") }, singleLine = true) },
+            confirmButton = { TextButton(onClick = {
+                val id = renameCategoryId
+                val name = renameCategoryName.trim()
+                if (id != null && name.isNotEmpty()) { database.renamePhotoCategory(id, name); refreshCategories() }
+                renameCategoryId = null
+            }) { Text("حفظ") } },
+            dismissButton = { TextButton(onClick = { renameCategoryId = null }) { Text("إلغاء") } }
+        )
 
         message?.let { msg -> AlertDialog(onDismissRequest={message=null}, title={Text("أذكاري المفضلة")}, text={Text(msg)}, confirmButton={TextButton(onClick={message=null}){Text("حسناً")}}) }
     }
