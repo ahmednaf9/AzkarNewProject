@@ -123,7 +123,7 @@ private fun AzkarMuslimApp() {
             Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(DeepGreen, Color(0xFF176B49), AppBackground))).padding(padding).padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(Modifier.fillMaxWidth().background(DeepGreen, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
-                    Text("أذكاري", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
+                    Text("أذكاري المفضلة", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
                     IconButton(onClick = { showList = true }) { Icon(Icons.Default.Home, "القائمة", tint = Gold) }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -139,7 +139,7 @@ private fun AzkarMuslimApp() {
                             else {
                                 val index = selectedText.coerceIn(textItems.indices)
                                 val item = textItems[index]
-                                Text("✦  ${index + 1} من ${textItems.size}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
+                                Text("✦  عدد الأذكار المكتوبة: ${textItems.size}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.weight(1f))
                                 Text("وَاذْكُرُوا اللَّهَ كَثِيرًا", color = DeepGreen, fontSize = 17.sp, fontWeight = FontWeight.Bold, modifier = Modifier.background(Color(0xFFF4E4BD), RoundedCornerShape(18.dp)).border(1.dp, Gold, RoundedCornerShape(18.dp)).padding(horizontal = 18.dp, vertical = 11.dp))
                                 Spacer(Modifier.height(22.dp))
@@ -171,7 +171,7 @@ private fun AzkarMuslimApp() {
                             } else {
                                 val index = selectedPhoto.coerceIn(photoItems.indices)
                                 val item = photoItems[index]
-                                Text("${index + 1} من ${photoItems.size}", color = Green, fontWeight = FontWeight.Bold)
+                                Text("✦  عدد الأذكار المصورة: ${photoItems.size}  ✦", color = Green, fontWeight = FontWeight.Bold)
                                 Spacer(Modifier.height(6.dp))
                                 StoredPhoto(item.path, Modifier.weight(1f).fillMaxWidth())
                                 Spacer(Modifier.height(8.dp))
@@ -238,7 +238,7 @@ private fun AzkarMuslimApp() {
             }
         }, confirmButton = { TextButton(onClick = { showSettings=false }) { Text("تم") } })
 
-        message?.let { msg -> AlertDialog(onDismissRequest={message=null}, title={Text("أذكاري")}, text={Text(msg)}, confirmButton={TextButton(onClick={message=null}){Text("حسناً")}}) }
+        message?.let { msg -> AlertDialog(onDismissRequest={message=null}, title={Text("أذكاري المفضلة")}, text={Text(msg)}, confirmButton={TextButton(onClick={message=null}){Text("حسناً")}}) }
     }
 }
 
