@@ -101,7 +101,7 @@ private fun AzkarMuslimApp() {
     var editTarget by remember { mutableStateOf("٣٣") }
     var photoTargetDialog by remember { mutableStateOf(false) }
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
-    var targetPhotoValue by remember { mutableStateOf("٣٣") }
+    var targetPhotoValue by remember { mutableStateOf("٣") }
     var showList by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
@@ -132,7 +132,7 @@ private fun AzkarMuslimApp() {
                     try {
                         val destination = File(context.filesDir, "dhikr_${UUID.randomUUID()}.img")
                         context.contentResolver.openInputStream(imageFile.uri)?.use { input -> destination.outputStream().use { output -> input.copyTo(output) } }
-                        if (destination.exists() && destination.length() > 0) importedItems.add(PhotoDhikr(UUID.randomUUID().toString(), destination.absolutePath, 33)) else destination.delete()
+                        if (destination.exists() && destination.length() > 0) importedItems.add(PhotoDhikr(UUID.randomUUID().toString(), destination.absolutePath, 3)) else destination.delete()
                     } catch (_: Exception) { }
                 }
                 if (importedItems.isNotEmpty()) {
@@ -151,7 +151,7 @@ private fun AzkarMuslimApp() {
                 context.contentResolver.openInputStream(uri)?.use { input -> destination.outputStream().use { output -> input.copyTo(output) } }
                 if (destination.exists() && destination.length() > 0) {
                     pendingPhotoPath = destination.absolutePath
-                    targetPhotoValue = "٣٣"
+                    targetPhotoValue = "٣"
                     photoTargetDialog = true
                 } else message = "تعذر حفظ الصورة"
             } catch (_: Exception) { message = "تعذر قراءة الصورة" }
