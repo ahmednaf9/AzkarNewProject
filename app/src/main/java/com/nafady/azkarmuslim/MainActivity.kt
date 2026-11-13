@@ -23,6 +23,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.awaitPointerEvent
 import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.ui.graphics.graphicsLayer
@@ -278,16 +282,25 @@ private fun AzkarMuslimApp() {
                                 Spacer(Modifier.height(6.dp))
                                 Box(
                                     Modifier.weight(1f).fillMaxWidth().pointerInput(selectedPhoto, photoItems.size) {
-                                        var dragDistance = 0f
-                                        detectVerticalDragGestures(
-                                            onVerticalDrag = { change, amount -> change.consume(); dragDistance += amount },
-                                            onDragEnd = {
-                                                if (dragDistance < -60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
-                                                else if (dragDistance > 60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
-                                                dragDistance = 0f
-                                            },
-                                            onDragCancel = { dragDistance = 0f }
-                                        )
+                                        awaitEachGesture {
+                                            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                                            val pointerId = down.id
+                                            var totalDrag = 0f
+                                            var lastY = down.position.y
+                                            var tracking = true
+                                            while (tracking) {
+                                                val event = awaitPointerEvent(PointerEventPass.Initial)
+                                                if (event.changes.count { it.pressed } > 1) { tracking = false; continue }
+                                                val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                                                totalDrag += change.position.y - lastY
+                                                lastY = change.position.y
+                                                if (!change.pressed) {
+                                                    if (totalDrag < -60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
+                                                    else if (totalDrag > 60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
+                                                    tracking = false
+                                                }
+                                            }
+                                        }
                                     },
                                     contentAlignment = Alignment.Center
                                 ) { StoredPhoto(item.path, Modifier.fillMaxSize()) }
