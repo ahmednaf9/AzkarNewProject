@@ -277,12 +277,15 @@ private fun AzkarMuslimApp() {
                                             label = {
                                                 Text(
                                                     category.name,
-                                                    maxLines = 1,
+                                                    maxLines = 2,
+                                                    softWrap = true,
+                                                    textAlign = TextAlign.Center,
+                                                    lineHeight = 11.sp,
                                                     fontSize = 10.sp,
                                                     fontWeight = FontWeight.ExtraBold
                                                 )
                                             },
-                                            modifier = Modifier.weight(1f).height(32.dp)
+                                            modifier = Modifier.weight(1f).height(42.dp)
                                         )
                                     }
                                     repeat(4 - categoryRow.size) { Spacer(Modifier.weight(1f)) }
