@@ -94,7 +94,8 @@ private fun String.toEnglishDigits(): String = map { ch ->
 private fun Int.toArabicDigits(): String = toString().toArabicDigits()
 
 private data class Dhikr(val id: String, val text: String, val target: Int, val count: Int = 0)
-private data class PhotoDhikr(val id: String, val path: String, val target: Int, val count: Int = 0)
+private data class PhotoCategory(val id: String, val name: String, val builtIn: Boolean = false)
+private data class PhotoDhikr(val id: String, val path: String, val target: Int, val count: Int = 0, val categoryId: String = "builtin_photos")
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -552,7 +553,7 @@ private fun loadLegacyPhotoItems(prefs: android.content.SharedPreferences): List
  * growing SharedPreferences JSON value. Existing installations are migrated.
  */
 private class AzkarDatabase(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "azkar_library.db", null, 1) {
+    SQLiteOpenHelper(context.applicationContext, "azkar_library.db", null, 2) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -568,13 +569,42 @@ private class AzkarDatabase(context: Context) :
                 id TEXT PRIMARY KEY NOT NULL,
                 path TEXT NOT NULL,
                 target INTEGER NOT NULL,
-                count INTEGER NOT NULL
+                count INTEGER NOT NULL,
+                category_id TEXT NOT NULL DEFAULT 'builtin_photos'
             )""".trimIndent()
         )
+        db.execSQL("CREATE TABLE photo_categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, built_in INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0)")
+        db.insert("photo_categories", null, ContentValues().apply { put("id", "builtin_photos"); put("name", "صور ذكر"); put("built_in", 1); put("sort_order", 0) })
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        // Add explicit schema migrations here if the database structure changes.
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE photo_dhikr ADD COLUMN category_id TEXT NOT NULL DEFAULT 'builtin_photos'")
+            db.execSQL("CREATE TABLE photo_categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, built_in INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0)")
+            db.insert("photo_categories", null, ContentValues().apply { put("id", "builtin_photos"); put("name", "صور ذكر"); put("built_in", 1); put("sort_order", 0) })
+        }
+    }
+
+    fun loadPhotoCategories(): List<PhotoCategory> {
+        val result = mutableListOf<PhotoCategory>()
+        readableDatabase.query("photo_categories", arrayOf("id", "name", "built_in"), null, null, null, null, "sort_order ASC, rowid ASC").use { c ->
+            while (c.moveToNext()) result.add(PhotoCategory(c.getString(0), c.getString(1), c.getInt(2) == 1))
+        }
+        return result
+    }
+
+    fun addPhotoCategory(category: PhotoCategory) {
+        writableDatabase.insertWithOnConflict("photo_categories", null, ContentValues().apply {
+            put("id", category.id); put("name", category.name); put("built_in", 0); put("sort_order", 1)
+        }, SQLiteDatabase.CONFLICT_IGNORE)
+    }
+
+    fun renamePhotoCategory(id: String, name: String) {
+        writableDatabase.update("photo_categories", ContentValues().apply { put("name", name) }, "id = ? AND built_in = 0", arrayOf(id))
+    }
+
+    fun deletePhotoCategory(id: String) {
+        writableDatabase.delete("photo_categories", "id = ? AND built_in = 0", arrayOf(id))
     }
 
     fun loadTextItems(prefs: android.content.SharedPreferences): List<Dhikr> {
@@ -594,9 +624,9 @@ private class AzkarDatabase(context: Context) :
 
     fun loadPhotoItems(prefs: android.content.SharedPreferences): List<PhotoDhikr> {
         val rows = mutableListOf<PhotoDhikr>()
-        readableDatabase.query("photo_dhikr", arrayOf("id", "path", "target", "count"),
+        readableDatabase.query("photo_dhikr", arrayOf("id", "path", "target", "count", "category_id"),
             null, null, null, null, "rowid ASC").use { c ->
-            while (c.moveToNext()) rows.add(PhotoDhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3)))
+            while (c.moveToNext()) rows.add(PhotoDhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3), c.getString(4)))
         }
         if (rows.isEmpty() && !prefs.getBoolean("photos_migrated_to_sqlite", false)) {
             val oldItems = loadLegacyPhotoItems(prefs)
@@ -641,7 +671,7 @@ private class AzkarDatabase(context: Context) :
             items.forEach { item ->
                 val values = ContentValues().apply {
                     put("id", item.id); put("path", item.path)
-                    put("target", item.target); put("count", item.count)
+                    put("target", item.target); put("count", item.count); put("category_id", item.categoryId)
                 }
                 db.insertWithOnConflict("photo_dhikr", null, values, SQLiteDatabase.CONFLICT_REPLACE)
             }
