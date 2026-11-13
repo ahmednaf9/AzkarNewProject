@@ -1,6 +1,9 @@
 package com.nafady.azkarmuslim
 
 import android.content.Context
+import android.content.ContentValues
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
@@ -75,8 +78,9 @@ class MainActivity : ComponentActivity() {
 private fun AzkarMuslimApp() {
     val context = LocalContext.current
     val prefs = remember { context.getSharedPreferences("azkar_muslim_v1", Context.MODE_PRIVATE) }
-    var textItems by remember { mutableStateOf(loadTextItems(prefs)) }
-    var photoItems by remember { mutableStateOf(loadPhotoItems(prefs)) }
+    val database = remember { AzkarDatabase(context) }
+    var textItems by remember { mutableStateOf(database.loadTextItems(prefs)) }
+    var photoItems by remember { mutableStateOf(database.loadPhotoItems(prefs)) }
     var tab by remember { mutableIntStateOf(0) }
     var selectedText by remember { mutableIntStateOf(0) }
     var selectedPhoto by remember { mutableIntStateOf(0) }
@@ -95,12 +99,12 @@ private fun AzkarMuslimApp() {
 
     fun saveTexts(list: List<Dhikr>) {
         textItems = list
-        prefs.edit().putString("texts", JSONArray().apply { list.forEach { put(JSONObject().put("id",it.id).put("text",it.text).put("target",it.target).put("count",it.count)) } }.toString()).apply()
+        database.saveTexts(list)
         selectedText = selectedText.coerceIn(0, (list.size - 1).coerceAtLeast(0))
     }
     fun savePhotos(list: List<PhotoDhikr>) {
         photoItems = list
-        prefs.edit().putString("photos", JSONArray().apply { list.forEach { put(JSONObject().put("id",it.id).put("path",it.path).put("target",it.target).put("count",it.count)) } }.toString()).apply()
+        database.savePhotos(list)
         selectedPhoto = selectedPhoto.coerceIn(0, (list.size - 1).coerceAtLeast(0))
     }
 
@@ -310,7 +314,7 @@ private fun vibrateDevice(context: Context) {
     }
 }
 
-private fun loadTextItems(prefs: android.content.SharedPreferences): List<Dhikr> {
+private fun loadLegacyTextItems(prefs: android.content.SharedPreferences): List<Dhikr> {
     val defaults = listOf(
         Dhikr("1", "سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", 100),
         Dhikr("2", "سُبْحَانَ اللَّهِ الْعَظِيمِ", 100),
@@ -324,6 +328,110 @@ private fun loadTextItems(prefs: android.content.SharedPreferences): List<Dhikr>
     return try { prefs.getString("texts", null)?.let { raw -> val a=JSONArray(raw); (0 until a.length()).map { val o=a.getJSONObject(it); Dhikr(o.optString("id",UUID.randomUUID().toString()),o.getString("text"),o.getInt("target"),o.optInt("count",0)) } } ?: defaults } catch (_: Exception) { defaults }
 }
 
-private fun loadPhotoItems(prefs: android.content.SharedPreferences): List<PhotoDhikr> = try {
+private fun loadLegacyPhotoItems(prefs: android.content.SharedPreferences): List<PhotoDhikr> = try {
     prefs.getString("photos", null)?.let { raw -> val a=JSONArray(raw); (0 until a.length()).map { val o=a.getJSONObject(it); PhotoDhikr(o.getString("id"),o.getString("path"),o.getInt("target"),o.optInt("count",0)) } } ?: emptyList()
 } catch (_: Exception) { emptyList() }
+
+
+/**
+ * SQLite-backed storage. Each dhikr is stored as its own row instead of one
+ * growing SharedPreferences JSON value. Existing installations are migrated.
+ */
+private class AzkarDatabase(context: Context) :
+    SQLiteOpenHelper(context.applicationContext, "azkar_library.db", null, 1) {
+
+    override fun onCreate(db: SQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE text_dhikr (
+                id TEXT PRIMARY KEY NOT NULL,
+                text TEXT NOT NULL,
+                target INTEGER NOT NULL,
+                count INTEGER NOT NULL
+            )""".trimIndent()
+        )
+        db.execSQL(
+            """CREATE TABLE photo_dhikr (
+                id TEXT PRIMARY KEY NOT NULL,
+                path TEXT NOT NULL,
+                target INTEGER NOT NULL,
+                count INTEGER NOT NULL
+            )""".trimIndent()
+        )
+    }
+
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        // Add explicit schema migrations here if the database structure changes.
+    }
+
+    fun loadTextItems(prefs: android.content.SharedPreferences): List<Dhikr> {
+        val rows = mutableListOf<Dhikr>()
+        readableDatabase.query("text_dhikr", arrayOf("id", "text", "target", "count"),
+            null, null, null, null, "rowid ASC").use { c ->
+            while (c.moveToNext()) rows.add(Dhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3)))
+        }
+        if (rows.isEmpty() && !prefs.getBoolean("texts_migrated_to_sqlite", false)) {
+            val oldItems = loadLegacyTextItems(prefs)
+            saveTexts(oldItems)
+            prefs.edit().putBoolean("texts_migrated_to_sqlite", true).apply()
+            return oldItems
+        }
+        return rows
+    }
+
+    fun loadPhotoItems(prefs: android.content.SharedPreferences): List<PhotoDhikr> {
+        val rows = mutableListOf<PhotoDhikr>()
+        readableDatabase.query("photo_dhikr", arrayOf("id", "path", "target", "count"),
+            null, null, null, null, "rowid ASC").use { c ->
+            while (c.moveToNext()) rows.add(PhotoDhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3)))
+        }
+        if (rows.isEmpty() && !prefs.getBoolean("photos_migrated_to_sqlite", false)) {
+            val oldItems = loadLegacyPhotoItems(prefs)
+            savePhotos(oldItems)
+            prefs.edit().putBoolean("photos_migrated_to_sqlite", true).apply()
+            return oldItems
+        }
+        return rows
+    }
+
+    fun saveTexts(items: List<Dhikr>) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val keep = items.mapTo(HashSet()) { it.id }
+            val existing = mutableListOf<String>()
+            db.query("text_dhikr", arrayOf("id"), null, null, null, null, null).use { c ->
+                while (c.moveToNext()) existing.add(c.getString(0))
+            }
+            existing.filterNot { it in keep }.forEach { db.delete("text_dhikr", "id = ?", arrayOf(it)) }
+            items.forEach { item ->
+                val values = ContentValues().apply {
+                    put("id", item.id); put("text", item.text)
+                    put("target", item.target); put("count", item.count)
+                }
+                db.insertWithOnConflict("text_dhikr", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+            }
+            db.setTransactionSuccessful()
+        } finally { db.endTransaction() }
+    }
+
+    fun savePhotos(items: List<PhotoDhikr>) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            val keep = items.mapTo(HashSet()) { it.id }
+            val existing = mutableListOf<String>()
+            db.query("photo_dhikr", arrayOf("id"), null, null, null, null, null).use { c ->
+                while (c.moveToNext()) existing.add(c.getString(0))
+            }
+            existing.filterNot { it in keep }.forEach { db.delete("photo_dhikr", "id = ?", arrayOf(it)) }
+            items.forEach { item ->
+                val values = ContentValues().apply {
+                    put("id", item.id); put("path", item.path)
+                    put("target", item.target); put("count", item.count)
+                }
+                db.insertWithOnConflict("photo_dhikr", null, values, SQLiteDatabase.CONFLICT_REPLACE)
+            }
+            db.setTransactionSuccessful()
+        } finally { db.endTransaction() }
+    }
+}
