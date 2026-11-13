@@ -416,7 +416,7 @@ private fun AzkarMuslimApp() {
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Counter(item.count, item.target) {
-                                    if (vibration) vibrateDevice(context)
+                                    if (vibration) vibrateDevice(context, rootView)
                                     val next = activePhotoItems.toMutableList(); val count = item.count + 1
                                     if (count >= item.target && autoRestart) {
                                         next[index] = item.copy(count = 0)
