@@ -234,7 +234,7 @@ private fun AzkarMuslimApp() {
                         }
                         .pointerInput(selectedPhoto, photoItems.size) {
                             detectTapGestures(onDoubleTap = { photoFullscreen = false })
-                        }
+                        },
                     contentAlignment = Alignment.Center
                 ) {
                     StoredPhoto(fullItem.path, Modifier.fillMaxSize())
