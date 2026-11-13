@@ -48,7 +48,6 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Image as ImageSymbol
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
@@ -116,7 +115,6 @@ private fun AzkarMuslimApp() {
     var photoTargetDialog by remember { mutableStateOf(false) }
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
     var targetPhotoValue by remember { mutableStateOf("٣") }
-    var showList by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
     var autoRestart by remember { mutableStateOf(prefs.getBoolean("auto_restart", true)) }
@@ -176,10 +174,9 @@ private fun AzkarMuslimApp() {
     MaterialTheme(colorScheme = lightColorScheme(primary = Green, secondary = DeepGreen, background = AppBackground, surface = Color(0xFFFFFBF1))) {
         Scaffold(containerColor = AppBackground, snackbarHost = { SnackbarHost(remember { SnackbarHostState() }) }) { padding ->
             Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(DeepGreen, Color(0xFF176B49), AppBackground))).padding(padding).padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Row(Modifier.fillMaxWidth().background(DeepGreen, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
-                    Text("أذكاري المفضلة", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
-                    IconButton(onClick = { showList = true }) { Icon(Icons.Default.Home, "القائمة", tint = Gold) }
+                Box(Modifier.fillMaxWidth().background(DeepGreen, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 5.dp)) {
+                    IconButton(onClick = { showSettings = true }, modifier = Modifier.align(Alignment.CenterStart)) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
+                    Text("أذكاري المفضلة", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold, modifier = Modifier.align(Alignment.Center))
                 }
                 Spacer(Modifier.height(10.dp))
                 Card(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF1)), border = BorderStroke(1.dp, Gold), elevation = CardDefaults.cardElevation(8.dp)) {
@@ -196,7 +193,7 @@ private fun AzkarMuslimApp() {
                                 val item = textItems[index]
                                 Box(Modifier.fillMaxWidth()) {
                                     Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
-                                    Box(Modifier.align(Alignment.CenterStart)) {
+                                    Box(Modifier.align(Alignment.CenterEnd)) {
                                         IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الذكر", tint = DeepGreen) }
                                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                                             DropdownMenuItem(text = { Text("إضافة ذكر") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true })
@@ -268,7 +265,7 @@ private fun AzkarMuslimApp() {
                                 val item = photoItems[index]
                                 Box(Modifier.fillMaxWidth()) {
                                     Text("✦  الذكر ${(index + 1).toArabicDigits()} / ${photoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
-                                    Box(Modifier.align(Alignment.CenterStart)) {
+                                    Box(Modifier.align(Alignment.CenterEnd)) {
                                         IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الصورة", tint = Green) }
                                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                                             DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
@@ -363,10 +360,6 @@ private fun AzkarMuslimApp() {
                 savePhotos(list); photoTargetDialog=false; pendingPhotoPath=null
             }
         }) { Text("حفظ") } }, dismissButton = { TextButton(onClick = { photoTargetDialog=false; pendingPhotoPath=null }) { Text("إلغاء") } })
-
-        if (showList) AlertDialog(onDismissRequest = { showList=false }, title = { Text("قائمة الأذكار المكتوبة") }, text = {
-            LazyColumn { itemsIndexed(textItems) { i, item -> Row(Modifier.fillMaxWidth().clickable { selectedText=i; tab=0; showList=false }.padding(vertical=8.dp), verticalAlignment=Alignment.CenterVertically) { Text(item.text, Modifier.weight(1f), maxLines=2); Text(item.target.toString().toArabicDigits(), color=Green, fontWeight=FontWeight.Bold) } } }
-        }, confirmButton = { TextButton(onClick = { showList=false }) { Text("إغلاق") } })
 
         if (showSettings) AlertDialog(onDismissRequest = { showSettings=false }, title = { Text("الإعدادات") }, text = {
             Column {
