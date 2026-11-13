@@ -12,6 +12,7 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import android.view.View
+import android.view.HapticFeedbackConstants
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -336,7 +337,7 @@ private fun AzkarMuslimApp() {
                                     )
                                 }
                                 Counter(item.count, item.target) {
-                                    if (vibration) vibrateDevice(context)
+                                    if (vibration) vibrateDevice(context, rootView)
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
                                     if (count >= item.target && autoRestart) {
@@ -592,19 +593,27 @@ private fun StoredPhoto(path: String, modifier: Modifier = Modifier) {
     else Box(modifier.background(Color(0xFFF4F4F4), RoundedCornerShape(16.dp)), contentAlignment=Alignment.Center) { Text("تعذر عرض الصورة", color=Color.Gray) }
 }
 
-private fun vibrateDevice(context: Context) {
+private fun vibrateDevice(context: Context, view: View) {
+    // Trigger Android's built-in tap haptic as a fallback on devices that suppress app vibration.
+    try {
+        view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+    } catch (_: Exception) {
+        // Continue with the vibrator service below.
+    }
     try {
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            context.getSystemService(VibratorManager::class.java).defaultVibrator
+            context.getSystemService(VibratorManager::class.java)?.defaultVibrator
         } else {
             @Suppress("DEPRECATION")
-            context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(25L, VibrationEffect.DEFAULT_AMPLITUDE))
-        } else {
-            @Suppress("DEPRECATION")
-            vibrator.vibrate(25L)
+        if (vibrator != null && vibrator.hasVibrator()) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(45L, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(45L)
+            }
         }
     } catch (_: Exception) {
         // Vibration is optional; counting must continue if the device has no vibrator.
