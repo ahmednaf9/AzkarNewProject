@@ -123,7 +123,7 @@ private fun AzkarMuslimApp() {
             Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(DeepGreen, Color(0xFF176B49), AppBackground))).padding(padding).padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Row(Modifier.fillMaxWidth().background(DeepGreen, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 5.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
-                    Text("أذكار المسلم", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
+                    Text("أذكاري", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
                     IconButton(onClick = { showList = true }) { Icon(Icons.Default.Home, "القائمة", tint = Gold) }
                 }
                 Spacer(Modifier.height(10.dp))
@@ -155,7 +155,6 @@ private fun AzkarMuslimApp() {
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                    OutlinedButton(onClick = { val n=textItems.toMutableList(); n[index]=item.copy(count=0); saveTexts(n) }, modifier=Modifier.weight(1f)) { Text("إعادة") }
                                     OutlinedButton(onClick = { selectedText = (index - 1 + textItems.size) % textItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
                                     OutlinedButton(onClick = { selectedText = (index + 1) % textItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
                                 }
@@ -185,7 +184,6 @@ private fun AzkarMuslimApp() {
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                    OutlinedButton(onClick = { val n=photoItems.toMutableList(); n[index]=item.copy(count=0); savePhotos(n) }, modifier=Modifier.weight(1f)) { Text("إعادة") }
                                     OutlinedButton(onClick = { selectedPhoto=(index-1+photoItems.size)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
                                     OutlinedButton(onClick = { selectedPhoto=(index+1)%photoItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
                                 }
@@ -240,7 +238,7 @@ private fun AzkarMuslimApp() {
             }
         }, confirmButton = { TextButton(onClick = { showSettings=false }) { Text("تم") } })
 
-        message?.let { msg -> AlertDialog(onDismissRequest={message=null}, title={Text("أذكار المسلم")}, text={Text(msg)}, confirmButton={TextButton(onClick={message=null}){Text("حسناً")}}) }
+        message?.let { msg -> AlertDialog(onDismissRequest={message=null}, title={Text("أذكاري")}, text={Text(msg)}, confirmButton={TextButton(onClick={message=null}){Text("حسناً")}}) }
     }
 }
 
