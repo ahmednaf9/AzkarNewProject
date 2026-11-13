@@ -72,6 +72,8 @@ private fun String.toEnglishDigits(): String = map { ch ->
     if (ch in '٠'..'٩') ('0'.code + (ch - '٠')).toChar() else ch
 }.joinToString("")
 
+private fun Int.toArabicDigits(): String = toString().toArabicDigits()
+
 private data class Dhikr(val id: String, val text: String, val target: Int, val count: Int = 0)
 private data class PhotoDhikr(val id: String, val path: String, val target: Int, val count: Int = 0)
 
