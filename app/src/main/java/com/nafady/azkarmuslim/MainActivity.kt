@@ -284,7 +284,7 @@ private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
                 text = count.toString(),
                 fontSize = 35.sp,
                 color = DeepGreen,
-                fontWeight = FontWeight.ExtraBold,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
             Text(
