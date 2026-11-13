@@ -67,6 +67,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -261,20 +263,22 @@ private fun AzkarMuslimApp() {
                 Spacer(Modifier.height(10.dp))
                 Card(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF1)), border = BorderStroke(1.dp, Gold), elevation = CardDefaults.cardElevation(8.dp)) {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        photoCategories.chunked(4).forEach { categoryRow ->
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                categoryRow.forEach { category ->
-                                    FilterChip(
-                                        selected = selectedCategoryId == category.id,
-                                        onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
-                                        label = { Text(category.name, maxLines = 1, fontSize = 10.sp) },
-                                        modifier = Modifier.weight(1f).height(32.dp)
-                                    )
+                        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                            photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.chunked(4).forEach { categoryRow ->
+                                Row(
+                                    Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.Start)
+                                ) {
+                                    categoryRow.forEach { category ->
+                                        FilterChip(
+                                            selected = selectedCategoryId == category.id,
+                                            onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
+                                            label = { Text(category.name, maxLines = 1, fontSize = 10.sp, fontWeight = FontWeight.Bold) },
+                                            modifier = Modifier.weight(1f).height(32.dp)
+                                        )
+                                    }
+                                    repeat(4 - categoryRow.size) { Spacer(Modifier.weight(1f)) }
                                 }
-                                repeat(4 - categoryRow.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                         Spacer(Modifier.height(10.dp))
