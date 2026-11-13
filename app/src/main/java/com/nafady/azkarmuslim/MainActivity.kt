@@ -153,9 +153,14 @@ private fun AzkarMuslimApp() {
                                     if (vibration) vibrateDevice(context)
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
-                                    if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0) }
-                                    else next[index] = item.copy(count = count.coerceAtMost(item.target))
-                                    saveTexts(next)
+                                    if (count >= item.target && autoRestart) {
+                                        next[index] = item.copy(count = 0)
+                                        saveTexts(next)
+                                        selectedText = (index + 1) % textItems.size
+                                    } else {
+                                        next[index] = item.copy(count = count.coerceAtMost(item.target))
+                                        saveTexts(next)
+                                    }
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -182,9 +187,14 @@ private fun AzkarMuslimApp() {
                                 Counter(item.count, item.target) {
                                     if (vibration) vibrateDevice(context)
                                     val next = photoItems.toMutableList(); val count = item.count + 1
-                                    if (count >= item.target && autoRestart) { next[index] = item.copy(count = 0) }
-                                    else next[index] = item.copy(count = count.coerceAtMost(item.target))
-                                    savePhotos(next)
+                                    if (count >= item.target && autoRestart) {
+                                        next[index] = item.copy(count = 0)
+                                        savePhotos(next)
+                                        selectedPhoto = (index + 1) % photoItems.size
+                                    } else {
+                                        next[index] = item.copy(count = count.coerceAtMost(item.target))
+                                        savePhotos(next)
+                                    }
                                 }
                                 Spacer(Modifier.height(8.dp))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
