@@ -206,23 +206,35 @@ private fun AzkarMuslimApp() {
                 Box(
                     Modifier.fillMaxSize().background(Color.Black)
                         .pointerInput(selectedPhoto, photoItems.size) {
-                            detectTapGestures(onDoubleTap = { photoFullscreen = false })
+                            awaitEachGesture {
+                                val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                                val pointerId = down.id
+                                var lastY = down.position.y
+                                var totalY = 0f
+                                var multiTouch = false
+                                var changed = false
+                                while (true) {
+                                    val event = awaitPointerEvent(PointerEventPass.Initial)
+                                    if (event.changes.count { it.pressed } > 1) {
+                                        multiTouch = true
+                                        break
+                                    }
+                                    val change = event.changes.firstOrNull { it.id == pointerId } ?: break
+                                    val deltaY = change.position.y - lastY
+                                    totalY += deltaY
+                                    lastY = change.position.y
+                                    if (!multiTouch && !changed && kotlin.math.abs(totalY) > 65f) {
+                                        if (totalY < 0f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
+                                        else if (totalY > 0f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
+                                        changed = true
+                                    }
+                                    if (!change.pressed) break
+                                }
+                            }
                         }
                         .pointerInput(selectedPhoto, photoItems.size) {
-                            var dragDistance = 0f
-                            detectVerticalDragGestures(
-                                onVerticalDrag = { change, amount ->
-                                    change.consume()
-                                    dragDistance += amount
-                                },
-                                onDragEnd = {
-                                    if (dragDistance < -60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto + 1) % photoItems.size
-                                    else if (dragDistance > 60f && photoItems.isNotEmpty()) selectedPhoto = (selectedPhoto - 1 + photoItems.size) % photoItems.size
-                                    dragDistance = 0f
-                                },
-                                onDragCancel = { dragDistance = 0f }
-                            )
-                        },
+                            detectTapGestures(onDoubleTap = { photoFullscreen = false })
+                        }
                     contentAlignment = Alignment.Center
                 ) {
                     StoredPhoto(fullItem.path, Modifier.fillMaxSize())
