@@ -258,30 +258,27 @@ private fun AzkarMuslimApp() {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                             // RTL layout: the first category (صور ذكر) starts at the far right.
-                            photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.chunked(3).forEach { categoryRow ->
-                                Row(
-                                    Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start)
-                                ) {
-                                    categoryRow.forEach { category ->
-                                        FilterChip(
-                                            selected = selectedCategoryId == category.id,
-                                            onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
-                                            label = {
-                                                Text(
-                                                    category.name,
-                                                    maxLines = 2,
-                                                    softWrap = true,
-                                                    textAlign = TextAlign.Center,
-                                                    lineHeight = 12.sp,
-                                                    fontSize = 11.sp,
-                                                    fontWeight = FontWeight.ExtraBold
-                                                )
-                                            },
-                                            modifier = Modifier.weight(1f).heightIn(min = 40.dp)
-                                        )
-                                    }
-                                    repeat(3 - categoryRow.size) { Spacer(Modifier.weight(1f)) }
+                            Row(
+                                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start)
+                            ) {
+                                photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.forEach { category ->
+                                    FilterChip(
+                                        selected = selectedCategoryId == category.id,
+                                        onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
+                                        label = {
+                                            Text(
+                                                category.name,
+                                                maxLines = 2,
+                                                softWrap = true,
+                                                textAlign = TextAlign.Center,
+                                                lineHeight = 14.sp,
+                                                fontSize = 12.sp,
+                                                fontWeight = FontWeight.ExtraBold
+                                            )
+                                        },
+                                        modifier = Modifier.heightIn(min = 44.dp)
+                                    )
                                 }
                             }
                         }
