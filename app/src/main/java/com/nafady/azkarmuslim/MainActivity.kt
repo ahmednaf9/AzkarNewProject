@@ -74,6 +74,8 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.UUID
 
 private val Green = Color(0xFF087A45)
@@ -146,6 +148,77 @@ private fun AzkarMuslimApp() {
         savePhotos(photoItems.filterNot { it.categoryId == selectedCategoryId } + list.map { it.copy(categoryId = selectedCategoryId) })
     }
     fun refreshCategories() { photoCategories = database.loadPhotoCategories() }
+
+    LaunchedEffect(Unit) {
+        if (!prefs.getBoolean("web_adhkar_seeded_v1", false)) {
+            val seeded = withContext(Dispatchers.IO) {
+                data class SeedCategory(val id: String, val name: String, val urls: List<String>)
+                val categories = listOf(
+                    SeedCategory("web_morning", "أذكار الصباح", listOf(
+                        "https://dikr.org/assets/cards/sabah-1.jpg",
+                        "https://dikr.org/assets/cards/sabah-2.jpg"
+                    )),
+                    SeedCategory("web_evening", "أذكار المساء", listOf(
+                        "https://dikr.org/assets/cards/masaa-1.jpg",
+                        "https://dikr.org/assets/cards/masaa-2.jpg"
+                    )),
+                    SeedCategory("web_sleep", "أذكار النوم", listOf(
+                        "https://dikr.org/assets/cards/nawm-1.jpg",
+                        "https://dikr.org/assets/cards/nawm-2.jpg"
+                    )),
+                    SeedCategory("web_rizq", "أذكار الرزق", listOf(
+                        "https://www.albetaqa.site/data/albetaqa/07rqaeq/albrkh/c-albrkh033.jpg"
+                    ))
+                )
+                val existingCategories = database.loadPhotoCategories().map { it.id }.toSet()
+                categories.filterNot { it.id in existingCategories }.forEach {
+                    database.addPhotoCategory(PhotoCategory(it.id, it.name))
+                }
+                val currentPhotos = database.loadPhotoItems(prefs).toMutableList()
+                var allDownloaded = true
+                categories.forEach { category ->
+                    category.urls.forEachIndexed { index, imageUrl ->
+                        val imageId = "${category.id}_${index + 1}"
+                        val existing = currentPhotos.firstOrNull { it.id == imageId }
+                        if (existing != null && File(existing.path).exists()) return@forEachIndexed
+                        val folder = File(context.filesDir, "web_adhkar").apply { mkdirs() }
+                        val destination = File(folder, "$imageId.jpg")
+                        try {
+                            val connection = (URL(imageUrl).openConnection() as HttpURLConnection).apply {
+                                connectTimeout = 15000
+                                readTimeout = 20000
+                                requestMethod = "GET"
+                                instanceFollowRedirects = true
+                            }
+                            try {
+                                connection.inputStream.use { input ->
+                                    destination.outputStream().use { output -> input.copyTo(output) }
+                                }
+                            } finally {
+                                connection.disconnect()
+                            }
+                            if (destination.length() > 0) {
+                                val newItem = PhotoDhikr(imageId, destination.absolutePath, 3, categoryId = category.id)
+                                val oldIndex = currentPhotos.indexOfFirst { it.id == imageId }
+                                if (oldIndex >= 0) currentPhotos[oldIndex] = newItem else currentPhotos.add(newItem)
+                            } else {
+                                destination.delete()
+                                allDownloaded = false
+                            }
+                        } catch (_: Exception) {
+                            destination.delete()
+                            allDownloaded = false
+                        }
+                    }
+                }
+                if (currentPhotos.isNotEmpty()) database.savePhotos(currentPhotos)
+                allDownloaded
+            }
+            photoItems = database.loadPhotoItems(prefs)
+            photoCategories = database.loadPhotoCategories()
+            if (seeded) prefs.edit().putBoolean("web_adhkar_seeded_v1", true).apply()
+        }
+    }
 
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { treeUri: Uri? ->
         if (treeUri != null) {
