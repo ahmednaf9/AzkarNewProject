@@ -328,12 +328,12 @@ private fun AzkarMuslimApp() {
                                 Counter(item.count, item.target) {
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
-                                    if (count >= item.target && autoRestart) {
+                                    if (count >= item.target) {
                                         next[index] = item.copy(count = 0)
                                         saveTexts(next)
                                         selectedText = (index + 1) % textItems.size
                                     } else {
-                                        next[index] = item.copy(count = count.coerceAtMost(item.target))
+                                        next[index] = item.copy(count = count)
                                         saveTexts(next)
                                     }
                                 }
@@ -405,12 +405,12 @@ private fun AzkarMuslimApp() {
                                 Spacer(Modifier.height(8.dp))
                                 Counter(item.count, item.target) {
                                     val next = activePhotoItems.toMutableList(); val count = item.count + 1
-                                    if (count >= item.target && autoRestart) {
+                                    if (count >= item.target) {
                                         next[index] = item.copy(count = 0)
                                         saveActivePhotos(next)
                                         selectedPhoto = (index + 1) % activePhotoItems.size
                                     } else {
-                                        next[index] = item.copy(count = count.coerceAtMost(item.target))
+                                        next[index] = item.copy(count = count)
                                         saveActivePhotos(next)
                                     }
                                 }
@@ -531,16 +531,9 @@ private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = count.toString().toArabicDigits(),
-                fontSize = 35.sp,
+                text = (target - count).coerceAtLeast(0).toString().toArabicDigits(),
+                fontSize = 42.sp,
                 color = DeepGreen,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "/ ${target.toString().toArabicDigits()}",
-                fontSize = 19.sp,
-                color = Color.Black,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
