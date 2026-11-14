@@ -167,7 +167,8 @@ private fun AzkarMuslimApp() {
                         "https://dikr.org/assets/cards/nawm-2.jpg"
                     )),
                     SeedCategory("web_rizq", "أذكار الرزق", listOf(
-                        "https://www.albetaqa.site/data/albetaqa/07rqaeq/albrkh/c-albrkh033.jpg"
+                        "https://www.albetaqa.site/data/albetaqa/07rqaeq/albrkh/c-albrkh033.jpg",
+                        "https://www.albetaqa.site/data/albetaqa/07rqaeq/albrkh/c-albrkh008.jpg"
                     ))
                 )
                 val existingCategories = database.loadPhotoCategories().map { it.id }.toSet()
