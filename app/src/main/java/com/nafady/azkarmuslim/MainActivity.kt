@@ -520,7 +520,7 @@ private fun AzkarMuslimApp() {
 private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
     Box(
         modifier = Modifier
-            .size(116.dp)
+            .size(58.dp)
             .clickable(onClick = onIncrement)
             .background(Gold, CircleShape)
             .padding(4.dp)
@@ -532,7 +532,7 @@ private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = (target - count).coerceAtLeast(0).toString().toArabicDigits(),
-                fontSize = 42.sp,
+                fontSize = 21.sp,
                 color = DeepGreen,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
