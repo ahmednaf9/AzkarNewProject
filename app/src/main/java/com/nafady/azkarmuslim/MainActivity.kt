@@ -489,10 +489,6 @@ private fun AzkarMuslimApp() {
                                     }
                                 }
                                 Spacer(Modifier.height(8.dp))
-                                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                    OutlinedButton(onClick = { selectedPhoto=(index-1+activePhotoItems.size)%activePhotoItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
-                                    OutlinedButton(onClick = { selectedPhoto=(index+1)%activePhotoItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
-                                }
                             }
                         }
                     }
