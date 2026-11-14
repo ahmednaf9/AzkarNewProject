@@ -493,14 +493,6 @@ private fun AzkarMuslimApp() {
                                     OutlinedButton(onClick = { selectedPhoto=(index-1+activePhotoItems.size)%activePhotoItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
                                     OutlinedButton(onClick = { selectedPhoto=(index+1)%activePhotoItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
                                 }
-                                OutlinedButton(
-                                    onClick = { saveActivePhotos(activePhotoItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
-                                    modifier = Modifier.fillMaxWidth()
-                                ) {
-                                    Icon(Icons.Default.Refresh, contentDescription = null)
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("تصفير العداد")
-                                }
                             }
                         }
                     }
