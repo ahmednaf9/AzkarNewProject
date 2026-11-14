@@ -594,8 +594,8 @@ private fun AzkarMuslimApp() {
 private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
     Box(
         modifier = Modifier
-            .width(150.dp)
-            .height(58.dp)
+            .fillMaxWidth()
+            .height(70.dp)
             .clickable(onClick = onIncrement),
         contentAlignment = Alignment.Center
     ) {
