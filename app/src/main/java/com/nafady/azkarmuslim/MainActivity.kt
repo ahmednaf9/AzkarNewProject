@@ -330,9 +330,39 @@ private fun AzkarMuslimApp() {
                 }
             } else {
             Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(DeepGreen, Color(0xFF176B49), AppBackground))).padding(padding).padding(horizontal = 12.dp, vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(Modifier.fillMaxWidth().background(DeepGreen, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 5.dp)) {
-                    IconButton(onClick = { showSettings = true }, modifier = Modifier.align(Alignment.CenterStart)) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
-                    Text("أذكاري المفضلة", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold, modifier = Modifier.align(Alignment.Center))
+                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                    Row(
+                        Modifier.fillMaxWidth().background(DeepGreen, RoundedCornerShape(22.dp)).padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
+                        Text("أذكاري المفضلة", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "القائمة", tint = Gold) }
+                            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                if (tab == 1) {
+                                    DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
+                                    DropdownMenuItem(text = { Text("إضافة صورة") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; photoPicker.launch("image/*") })
+                                    if (activePhotoItems.isNotEmpty()) {
+                                        val currentPhoto = activePhotoItems[selectedPhoto.coerceIn(0, activePhotoItems.lastIndex)]
+                                        DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = currentPhoto.target.toString().toArabicDigits(); pendingPhotoPath = currentPhoto.path; photoTargetDialog = true })
+                                        DropdownMenuItem(text = { Text("ترتيب الصور بالسحب والإفلات") }, leadingIcon = { Text("☰") }, onClick = { menuExpanded = false; photoDragOrderDialog = true })
+                                        DropdownMenuItem(text = { Text("تعديل مكان الصورة بالرقم") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (selectedPhoto + 1).toString().toArabicDigits(); photoOrderDialog = true })
+                                        DropdownMenuItem(text = { Text("الانتقال إلى صورة برقمها") }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { menuExpanded = false; goToPhotoNumber = (selectedPhoto + 1).toString().toArabicDigits(); goToPhotoDialog = true })
+                                        DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(currentPhoto.path).delete(); saveActivePhotos(activePhotoItems.filterNot { it.id == currentPhoto.id }) })
+                                    }
+                                } else {
+                                    DropdownMenuItem(text = { Text("إضافة ذكر") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true })
+                                    if (textItems.isNotEmpty()) {
+                                        val currentText = textItems[selectedText.coerceIn(0, textItems.lastIndex)]
+                                        DropdownMenuItem(text = { Text("تعديل الذكر") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; editingId = currentText.id; editText = currentText.text; editTarget = currentText.target.toString().toArabicDigits(); editorOpen = true })
+                                        DropdownMenuItem(text = { Text("حذف الذكر") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; saveTexts(textItems.filterNot { it.id == currentText.id }) })
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 Spacer(Modifier.height(10.dp))
                 Card(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF1)), border = BorderStroke(1.dp, Gold), elevation = CardDefaults.cardElevation(8.dp)) {
@@ -371,14 +401,7 @@ private fun AzkarMuslimApp() {
                                 val item = textItems[index]
                                 Box(Modifier.fillMaxWidth()) {
                                     Text("✦  ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
-                                    Box(Modifier.align(Alignment.CenterEnd)) {
-                                        IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الذكر", tint = DeepGreen) }
-                                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                                            DropdownMenuItem(text = { Text("إضافة ذكر") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true })
-                                            DropdownMenuItem(text = { Text("تعديل الذكر") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; editingId = item.id; editText = item.text; editTarget = item.target.toString().toArabicDigits(); editorOpen = true })
-                                            DropdownMenuItem(text = { Text("حذف الذكر") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; saveTexts(textItems.filterNot { it.id == item.id }) })
-                                        }
-                                    }
+
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Box(
@@ -441,18 +464,7 @@ private fun AzkarMuslimApp() {
                                 val item = activePhotoItems[index]
                                 Box(Modifier.fillMaxWidth()) {
                                     Text("✦  ${(index + 1).toArabicDigits()} / ${activePhotoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
-                                    Box(Modifier.align(Alignment.CenterEnd)) {
-                                        IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "خيارات الصورة", tint = Green) }
-                                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                                            DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
-                                            DropdownMenuItem(text = { Text("إضافة صورة") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; photoPicker.launch("image/*") })
-                                            DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = item.target.toString().toArabicDigits(); pendingPhotoPath = item.path; photoTargetDialog = true })
-                                            DropdownMenuItem(text = { Text("ترتيب الصور بالسحب والإفلات") }, leadingIcon = { Text("☰") }, onClick = { menuExpanded = false; photoDragOrderDialog = true })
-                                            DropdownMenuItem(text = { Text("تعديل مكان الصورة بالرقم") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (index + 1).toString().toArabicDigits(); photoOrderDialog = true })
-                                            DropdownMenuItem(text = { Text("الانتقال إلى صورة برقمها") }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { menuExpanded = false; goToPhotoNumber = (index + 1).toString().toArabicDigits(); goToPhotoDialog = true })
-                                            DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); saveActivePhotos(activePhotoItems.filterNot { it.id == item.id }) })
-                                        }
-                                    }
+
                                 }
                                 Spacer(Modifier.height(6.dp))
                                 Box(
