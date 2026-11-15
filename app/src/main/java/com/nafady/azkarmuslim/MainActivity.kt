@@ -53,6 +53,8 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Image as ImageSymbol
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -363,8 +365,9 @@ private fun AzkarMuslimApp() {
                                     }
                                 } else {
                                     DropdownMenuItem(text = { Text("إضافة ذكر") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; editingId = null; editText = ""; editTarget = "٣٣"; editorOpen = true })
-                                    if (textItems.isNotEmpty()) {
-                                        val currentText = textItems[selectedText.coerceIn(0, textItems.lastIndex)]
+                                    if ((if (showingFavorites) textItems.filter { it.isFavorite } else textItems).isNotEmpty()) {
+                                        val shownTexts = if (showingFavorites) textItems.filter { it.isFavorite } else textItems
+                                        val currentText = shownTexts[selectedText.coerceIn(0, shownTexts.lastIndex)]
                                         DropdownMenuItem(text = { Text("تعديل الذكر") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; editingId = currentText.id; editText = currentText.text; editTarget = currentText.target.toString().toArabicDigits(); editorOpen = true })
                                         DropdownMenuItem(text = { Text("حذف الذكر") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; saveTexts(textItems.filterNot { it.id == currentText.id }) })
                                     }
@@ -907,7 +910,8 @@ private class AzkarDatabase(context: Context) :
                 id TEXT PRIMARY KEY NOT NULL,
                 text TEXT NOT NULL,
                 target INTEGER NOT NULL,
-                count INTEGER NOT NULL
+                count INTEGER NOT NULL,
+                is_favorite INTEGER NOT NULL DEFAULT 0
             )""".trimIndent()
         )
         db.execSQL(
