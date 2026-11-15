@@ -129,6 +129,9 @@ private fun AzkarMuslimApp() {
     var photoOrderDialog by remember { mutableStateOf(false) }
     var photoDragOrderDialog by remember { mutableStateOf(false) }
     var goToPhotoDialog by remember { mutableStateOf(false) }
+    var movePhotoDialog by remember { mutableStateOf(false) }
+    var movePhotoTargetCategoryId by remember { mutableStateOf("") }
+    var keepPhotoOriginal by remember { mutableStateOf(true) }
     var goToPhotoNumber by remember { mutableStateOf("") }
     var targetPhotoPosition by remember { mutableStateOf("") }
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
@@ -350,6 +353,7 @@ private fun AzkarMuslimApp() {
                                         DropdownMenuItem(text = { Text("ترتيب الصور بالسحب والإفلات") }, leadingIcon = { Text("☰") }, onClick = { menuExpanded = false; photoDragOrderDialog = true })
                                         DropdownMenuItem(text = { Text("تعديل مكان الصورة بالرقم") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (selectedPhoto + 1).toString().toArabicDigits(); photoOrderDialog = true })
                                         DropdownMenuItem(text = { Text("الانتقال إلى صورة برقمها") }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { menuExpanded = false; goToPhotoNumber = (selectedPhoto + 1).toString().toArabicDigits(); goToPhotoDialog = true })
+                                        DropdownMenuItem(text = { Text("نقل الصورة إلى مجلد") }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { menuExpanded = false; movePhotoTargetCategoryId = photoCategories.firstOrNull { it.id != selectedCategoryId }?.id.orEmpty(); keepPhotoOriginal = true; movePhotoDialog = true })
                                         DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(currentPhoto.path).delete(); saveActivePhotos(activePhotoItems.filterNot { it.id == currentPhoto.id }) })
                                     }
                                 } else {
@@ -574,6 +578,86 @@ private fun AzkarMuslimApp() {
                 }) { Text("انتقال") }
             },
             dismissButton = { TextButton(onClick = { goToPhotoDialog = false }) { Text("إلغاء") } }
+        )
+
+        if (movePhotoDialog) AlertDialog(
+            onDismissRequest = { movePhotoDialog = false },
+            title = { Text("نقل الصورة إلى مجلد") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("اختر المجلد الذي تريد وضع الصورة فيه:")
+                    photoCategories.filter { it.id != selectedCategoryId }.forEach { category ->
+                        Row(
+                            Modifier.fillMaxWidth().clickable { movePhotoTargetCategoryId = category.id },
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = movePhotoTargetCategoryId == category.id,
+                                onClick = { movePhotoTargetCategoryId = category.id }
+                            )
+                            Text(category.name)
+                        }
+                    }
+                    if (photoCategories.none { it.id != selectedCategoryId }) {
+                        Text("أضف مجلداً آخر أولاً من الإعدادات.", color = Color.Gray)
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text("ماذا تريد أن تفعل بالصورة الأصلية؟", fontWeight = FontWeight.Bold)
+                    Row(
+                        Modifier.fillMaxWidth().clickable { keepPhotoOriginal = true },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = keepPhotoOriginal, onClick = { keepPhotoOriginal = true })
+                        Text("الاحتفاظ بالأصل في المجلد القديم (نسخ)")
+                    }
+                    Row(
+                        Modifier.fillMaxWidth().clickable { keepPhotoOriginal = false },
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(selected = !keepPhotoOriginal, onClick = { keepPhotoOriginal = false })
+                        Text("حذفها من المجلد القديم (نقل)")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val current = activePhotoItems.getOrNull(selectedPhoto)
+                    val targetId = movePhotoTargetCategoryId
+                    if (current == null || targetId.isBlank() || targetId == selectedCategoryId) {
+                        message = "اختر مجلداً آخر"
+                    } else {
+                        try {
+                            val updated = photoItems.toMutableList()
+                            if (keepPhotoOriginal) {
+                                val source = File(current.path)
+                                if (!source.exists()) throw IllegalStateException("missing source")
+                                val extension = source.extension.takeIf { it.isNotBlank() } ?: "img"
+                                val copied = File(context.filesDir, "dhikr_${UUID.randomUUID()}.$extension")
+                                source.copyTo(copied, overwrite = false)
+                                updated.add(current.copy(
+                                    id = UUID.randomUUID().toString(),
+                                    path = copied.absolutePath,
+                                    categoryId = targetId
+                                ))
+                                message = "تم نسخ الصورة إلى المجلد الجديد مع الاحتفاظ بالأصل"
+                            } else {
+                                val index = updated.indexOfFirst { it.id == current.id }
+                                if (index < 0) throw IllegalStateException("missing item")
+                                updated[index] = current.copy(categoryId = targetId)
+                                message = "تم نقل الصورة إلى المجلد الجديد"
+                            }
+                            savePhotos(updated)
+                            selectedPhoto = 0
+                            movePhotoDialog = false
+                        } catch (_: Exception) {
+                            message = "تعذر نقل أو نسخ الصورة"
+                        }
+                    }
+                }, enabled = photoCategories.any { it.id != selectedCategoryId } && movePhotoTargetCategoryId.isNotBlank()) { Text("تنفيذ") }
+            },
+            dismissButton = {
+                TextButton(onClick = { movePhotoDialog = false }) { Text("إلغاء") }
+            }
         )
 
         if (photoDragOrderDialog) AlertDialog(
