@@ -128,6 +128,8 @@ private fun AzkarMuslimApp() {
     var photoTargetDialog by remember { mutableStateOf(false) }
     var photoOrderDialog by remember { mutableStateOf(false) }
     var photoDragOrderDialog by remember { mutableStateOf(false) }
+    var goToPhotoDialog by remember { mutableStateOf(false) }
+    var goToPhotoNumber by remember { mutableStateOf("") }
     var targetPhotoPosition by remember { mutableStateOf("") }
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
     var targetPhotoValue by remember { mutableStateOf("٣") }
@@ -447,6 +449,7 @@ private fun AzkarMuslimApp() {
                                             DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = item.target.toString().toArabicDigits(); pendingPhotoPath = item.path; photoTargetDialog = true })
                                             DropdownMenuItem(text = { Text("ترتيب الصور بالسحب والإفلات") }, leadingIcon = { Text("☰") }, onClick = { menuExpanded = false; photoDragOrderDialog = true })
                                             DropdownMenuItem(text = { Text("تعديل مكان الصورة بالرقم") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (index + 1).toString().toArabicDigits(); photoOrderDialog = true })
+                                            DropdownMenuItem(text = { Text("الانتقال إلى صورة برقمها") }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { menuExpanded = false; goToPhotoNumber = (index + 1).toString().toArabicDigits(); goToPhotoDialog = true })
                                             DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); saveActivePhotos(activePhotoItems.filterNot { it.id == item.id }) })
                                         }
                                     }
@@ -530,6 +533,36 @@ private fun AzkarMuslimApp() {
                 saveActivePhotos(list); photoTargetDialog=false; pendingPhotoPath=null
             }
         }) { Text("حفظ") } }, dismissButton = { TextButton(onClick = { photoTargetDialog=false; pendingPhotoPath=null }) { Text("إلغاء") } })
+
+        if (goToPhotoDialog) AlertDialog(
+            onDismissRequest = { goToPhotoDialog = false },
+            title = { Text("الانتقال إلى صورة برقمها") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("عدد الصور في هذه الخانة: ${activePhotoItems.size.toString().toArabicDigits()}")
+                    OutlinedTextField(
+                        value = goToPhotoNumber,
+                        onValueChange = { goToPhotoNumber = it.filter(Char::isDigit).toArabicDigits().take(7) },
+                        label = { Text("رقم الصورة") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val destination = goToPhotoNumber.toEnglishDigits().toIntOrNull()
+                    if (destination != null && destination in 1..activePhotoItems.size) {
+                        selectedPhoto = destination - 1
+                        goToPhotoDialog = false
+                    } else {
+                        message = "اكتب رقماً من ١ إلى ${activePhotoItems.size.toString().toArabicDigits()}"
+                    }
+                }) { Text("انتقال") }
+            },
+            dismissButton = { TextButton(onClick = { goToPhotoDialog = false }) { Text("إلغاء") } }
+        )
 
         if (photoDragOrderDialog) AlertDialog(
             onDismissRequest = { photoDragOrderDialog = false },
