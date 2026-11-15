@@ -483,9 +483,14 @@ private fun AzkarMuslimApp() {
                             } else {
                                 val index = selectedPhoto.coerceIn(activePhotoItems.indices)
                                 val item = activePhotoItems[index]
-                                Box(Modifier.fillMaxWidth()) {
-                                    Text("✦  ${(index + 1).toArabicDigits()} / ${activePhotoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
-
+                                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                    Text("✦  ${(index + 1).toArabicDigits()} / ${activePhotoItems.size.toArabicDigits()}  ✦", color = Green, fontWeight = FontWeight.Bold)
+                                    IconButton(
+                                        onClick = { savePhotos(photoItems.map { photo -> if (photo.id == item.id) photo.copy(isFavorite = !photo.isFavorite) else photo }) },
+                                        modifier = Modifier.align(Alignment.CenterEnd).size(36.dp)
+                                    ) {
+                                        Icon(if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder, contentDescription = "تبديل المفضلة", tint = if (item.isFavorite) Gold else Color.Gray)
+                                    }
                                 }
                                 Spacer(Modifier.height(6.dp))
                                 Box(
@@ -516,12 +521,6 @@ private fun AzkarMuslimApp() {
                                         detectTapGestures(onDoubleTap = { photoFullscreen = true })
                                     }) {
                                         StoredPhoto(item.path, Modifier.fillMaxSize())
-                                        IconButton(
-                                            onClick = { savePhotos(photoItems.map { photo -> if (photo.id == item.id) photo.copy(isFavorite = !photo.isFavorite) else photo }) },
-                                            modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).background(Color.Black.copy(alpha = 0.35f), CircleShape)
-                                        ) {
-                                            Icon(if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder, contentDescription = "تبديل المفضلة", tint = if (item.isFavorite) Gold else Color.White)
-                                        }
                                     }
                                 }
                                 Spacer(Modifier.height(8.dp))
