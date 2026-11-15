@@ -125,6 +125,8 @@ private fun AzkarMuslimApp() {
     var editText by remember { mutableStateOf("") }
     var editTarget by remember { mutableStateOf("٣٣") }
     var photoTargetDialog by remember { mutableStateOf(false) }
+    var photoOrderDialog by remember { mutableStateOf(false) }
+    var targetPhotoPosition by remember { mutableStateOf("") }
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
     var targetPhotoValue by remember { mutableStateOf("٣") }
     var showSettings by remember { mutableStateOf(false) }
@@ -197,8 +199,7 @@ private fun AzkarMuslimApp() {
                                 }
                             } finally {
                                 connection.disconnect()
-                            }
-                            if (destination.length() > 0) {
+                            }                            if (destination.length() > 0) {
                                 val newItem = PhotoDhikr(imageId, destination.absolutePath, 3, categoryId = category.id)
                                 val oldIndex = currentPhotos.indexOfFirst { it.id == imageId }
                                 if (oldIndex >= 0) currentPhotos[oldIndex] = newItem else currentPhotos.add(newItem)
@@ -397,8 +398,7 @@ private fun AzkarMuslimApp() {
                                         lineHeight = 38.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF151515)
-                                    )
-                                }
+                                    )                                }
                                 Counter(item.count, item.target) {
                                     val next = textItems.toMutableList()
                                     val count = item.count + 1
@@ -441,6 +441,7 @@ private fun AzkarMuslimApp() {
                                             DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
                                             DropdownMenuItem(text = { Text("إضافة صورة") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; photoPicker.launch("image/*") })
                                             DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = item.target.toString().toArabicDigits(); pendingPhotoPath = item.path; photoTargetDialog = true })
+                                            DropdownMenuItem(text = { Text("تغيير ترتيب الصورة") }, leadingIcon = { Icon(Icons.Default.Refresh, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (index + 1).toString().toArabicDigits(); photoOrderDialog = true })
                                             DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); saveActivePhotos(activePhotoItems.filterNot { it.id == item.id }) })
                                         }
                                     }
@@ -525,6 +526,42 @@ private fun AzkarMuslimApp() {
             }
         }) { Text("حفظ") } }, dismissButton = { TextButton(onClick = { photoTargetDialog=false; pendingPhotoPath=null }) { Text("إلغاء") } })
 
+        if (photoOrderDialog) AlertDialog(
+            onDismissRequest = { photoOrderDialog = false },
+            title = { Text("تغيير ترتيب الصورة") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("الصورة الحالية رقم ${(selectedPhoto + 1).toString().toArabicDigits()} من ${activePhotoItems.size.toString().toArabicDigits()}")
+                    OutlinedTextField(
+                        value = targetPhotoPosition,
+                        onValueChange = { targetPhotoPosition = it.filter(Char::isDigit).toArabicDigits().take(6) },
+                        label = { Text("الرقم الجديد للصورة") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text("مثال: اكتب ٤ لنقل الصورة إلى المكان الرابع", color = Color.Gray, fontSize = 12.sp)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val destination = targetPhotoPosition.toEnglishDigits().toIntOrNull()?.minus(1)
+                    if (destination != null && destination in activePhotoItems.indices) {
+                        val reordered = activePhotoItems.toMutableList()
+                        val moved = reordered.removeAt(selectedPhoto.coerceIn(reordered.indices))
+                        reordered.add(destination.coerceIn(0, reordered.size), moved)
+                        saveActivePhotos(reordered)
+                        selectedPhoto = destination
+                        message = "تم تغيير ترتيب الصورة بنجاح"
+                        photoOrderDialog = false
+                    } else {
+                        message = "اكتب رقماً من ١ إلى ${activePhotoItems.size.toString().toArabicDigits()}"
+                    }
+                }) { Text("حفظ الترتيب") }
+            },
+            dismissButton = { TextButton(onClick = { photoOrderDialog = false }) { Text("إلغاء") } }
+        )
+
         if (showSettings) AlertDialog(onDismissRequest = { showSettings=false }, title = { Text("الإعدادات") }, text = {
             Column {
                 Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) { Text("إعادة العداد تلقائياً بعد اكتمال العدد", Modifier.weight(1f)); Switch(autoRestart, { autoRestart=it; prefs.edit().putBoolean("auto_restart",it).apply() }) }
@@ -597,8 +634,7 @@ private fun Counter(count: Int, target: Int, onIncrement: () -> Unit) {
                 .background(Color(0xFFFFF6DF), CircleShape),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = (target - count).coerceAtLeast(0).toString().toArabicDigits(),
+            Text(                text = (target - count).coerceAtLeast(0).toString().toArabicDigits(),
                 fontSize = 21.sp,
                 color = DeepGreen,
                 fontWeight = FontWeight.Bold,
