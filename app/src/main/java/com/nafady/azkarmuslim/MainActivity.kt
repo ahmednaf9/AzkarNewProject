@@ -95,7 +95,7 @@ private fun String.toEnglishDigits(): String = map { ch ->
 
 private fun Int.toArabicDigits(): String = toString().toArabicDigits()
 
-private data class Dhikr(val id: String, val text: String, val target: Int, val count: Int = 0)
+private data class Dhikr(val id: String, val text: String, val target: Int, val count: Int = 0, val isFavorite: Boolean = false)
 private data class PhotoCategory(val id: String, val name: String, val builtIn: Boolean = false)
 private data class PhotoDhikr(val id: String, val path: String, val target: Int, val count: Int = 0, val categoryId: String = "builtin_photos")
 
@@ -120,6 +120,7 @@ private fun AzkarMuslimApp() {
     var renameCategoryName by remember { mutableStateOf("") }
     var tab by remember { mutableIntStateOf(1) }
     var selectedText by remember { mutableIntStateOf(0) }
+    var showingFavorites by remember { mutableStateOf(false) }
     var selectedPhoto by remember { mutableIntStateOf(0) }
     var editorOpen by remember { mutableStateOf(false) }
     var editingId by remember { mutableStateOf<String?>(null) }
@@ -341,7 +342,11 @@ private fun AzkarMuslimApp() {
                     ) {
                         IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
                         Text("أذكاري المفضلة", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
-                        Box {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (tab == 0) IconButton(onClick = { showingFavorites = !showingFavorites; selectedText = 0 }) {
+                                Icon(if (showingFavorites) Icons.Default.Star else Icons.Default.StarBorder, contentDescription = if (showingFavorites) "كل الأذكار" else "الأذكار المفضلة", tint = Gold)
+                            }
+                            Box {
                             IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "القائمة", tint = Gold) }
                             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                                 if (tab == 1) {
@@ -399,23 +404,24 @@ private fun AzkarMuslimApp() {
                         }
                         Spacer(Modifier.height(10.dp))
                         if (tab == 0) {
-                            if (textItems.isEmpty()) EmptyState("لا توجد أذكار مكتوبة", "أضف ذكراً جديداً للبدء")
+                            val visibleTextItems = if (showingFavorites) textItems.filter { it.isFavorite } else textItems
+                            if (visibleTextItems.isEmpty()) EmptyState(if (showingFavorites) "لا توجد أذكار مفضلة" else "لا توجد أذكار مكتوبة", if (showingFavorites) "اضغط على النجمة بجانب الذكر لإضافته للمفضلة" else "أضف ذكراً جديداً للبدء")
                             else {
-                                val index = selectedText.coerceIn(textItems.indices)
-                                val item = textItems[index]
+                                val index = selectedText.coerceIn(visibleTextItems.indices)
+                                val item = visibleTextItems[index]
                                 Box(Modifier.fillMaxWidth()) {
-                                    Text("✦  ${(index + 1).toArabicDigits()} / ${textItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
+                                    Text("✦  ${(index + 1).toArabicDigits()} / ${visibleTextItems.size.toArabicDigits()}  ✦", color = DeepGreen, fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
 
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Box(
-                                    modifier = Modifier.fillMaxWidth().weight(2f).pointerInput(selectedText, textItems.size) {
+                                    modifier = Modifier.fillMaxWidth().weight(2f).pointerInput(selectedText, visibleTextItems.size) {
                                         var dragDistance = 0f
                                         detectVerticalDragGestures(
                                             onVerticalDrag = { change, amount -> change.consume(); dragDistance += amount },
                                             onDragEnd = {
-                                                if (dragDistance < -60f && textItems.isNotEmpty()) selectedText = (selectedText + 1) % textItems.size
-                                                else if (dragDistance > 60f && textItems.isNotEmpty()) selectedText = (selectedText - 1 + textItems.size) % textItems.size
+                                                if (dragDistance < -60f && visibleTextItems.isNotEmpty()) selectedText = (selectedText + 1) % visibleTextItems.size
+                                                else if (dragDistance > 60f && visibleTextItems.isNotEmpty()) selectedText = (selectedText - 1 + visibleTextItems.size) % visibleTextItems.size
                                                 dragDistance = 0f
                                             },
                                             onDragCancel = { dragDistance = 0f }
@@ -423,7 +429,11 @@ private fun AzkarMuslimApp() {
                                     },
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Text(
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                        IconButton(onClick = { saveTexts(textItems.map { if (it.id == item.id) it.copy(isFavorite = !it.isFavorite) else it }) }) {
+                                            Icon(if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder, contentDescription = "تبديل المفضلة", tint = if (item.isFavorite) Gold else Color.Gray, modifier = Modifier.size(32.dp))
+                                        }
+                                        Text(
                                         item.text,
                                         modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                                         textAlign = TextAlign.Center,
@@ -431,26 +441,29 @@ private fun AzkarMuslimApp() {
                                         lineHeight = 38.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFF151515)
-                                    )                                }
+                                    )
+                                    }
+                                }
                                 Counter(item.count, item.target) {
                                     val next = textItems.toMutableList()
+                                    val actualIndex = next.indexOfFirst { it.id == item.id }
                                     val count = item.count + 1
                                     if (count >= item.target) {
-                                        next[index] = item.copy(count = 0)
+                                        next[actualIndex] = item.copy(count = 0)
                                         saveTexts(next)
-                                        selectedText = (index + 1) % textItems.size
+                                        selectedText = if (visibleTextItems.isEmpty()) 0 else (index + 1) % visibleTextItems.size
                                     } else {
-                                        next[index] = item.copy(count = count)
+                                        next[actualIndex] = item.copy(count = count)
                                         saveTexts(next)
                                     }
                                 }
                                 Spacer(Modifier.weight(1f))
                                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                                    OutlinedButton(onClick = { selectedText = (index - 1 + textItems.size) % textItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
-                                    OutlinedButton(onClick = { selectedText = (index + 1) % textItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
+                                    OutlinedButton(onClick = { selectedText = (index - 1 + visibleTextItems.size) % visibleTextItems.size }, modifier=Modifier.weight(1f)) { Text("السابق") }
+                                    OutlinedButton(onClick = { selectedText = (index + 1) % visibleTextItems.size }, modifier=Modifier.weight(1f)) { Text("التالي") }
                                 }
                                 OutlinedButton(
-                                    onClick = { saveTexts(textItems.mapIndexed { i, dhikr -> if (i == index) dhikr.copy(count = 0) else dhikr }) },
+                                    onClick = { saveTexts(textItems.map { dhikr -> if (dhikr.id == item.id) dhikr.copy(count = 0) else dhikr }) },
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
                                     Icon(Icons.Default.Refresh, contentDescription = null)
@@ -873,7 +886,7 @@ private fun loadLegacyTextItems(prefs: android.content.SharedPreferences): List<
         Dhikr("7", "اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ", 10),
         Dhikr("8", "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", 100)
     )
-    return try { prefs.getString("texts", null)?.let { raw -> val a=JSONArray(raw); (0 until a.length()).map { val o=a.getJSONObject(it); Dhikr(o.optString("id",UUID.randomUUID().toString()),o.getString("text"),o.getInt("target"),o.optInt("count",0)) } } ?: defaults } catch (_: Exception) { defaults }
+    return try { prefs.getString("texts", null)?.let { raw -> val a=JSONArray(raw); (0 until a.length()).map { val o=a.getJSONObject(it); Dhikr(o.optString("id",UUID.randomUUID().toString()),o.getString("text"),o.getInt("target"),o.optInt("count",0),o.optBoolean("isFavorite",false)) } } ?: defaults } catch (_: Exception) { defaults }
 }
 
 private fun loadLegacyPhotoItems(prefs: android.content.SharedPreferences): List<PhotoDhikr> = try {
@@ -886,7 +899,7 @@ private fun loadLegacyPhotoItems(prefs: android.content.SharedPreferences): List
  * growing SharedPreferences JSON value. Existing installations are migrated.
  */
 private class AzkarDatabase(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "azkar_library.db", null, 2) {
+    SQLiteOpenHelper(context.applicationContext, "azkar_library.db", null, 3) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -916,6 +929,7 @@ private class AzkarDatabase(context: Context) :
             db.execSQL("CREATE TABLE photo_categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, built_in INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0)")
             db.insert("photo_categories", null, ContentValues().apply { put("id", "builtin_photos"); put("name", "صور ذكر"); put("built_in", 1); put("sort_order", 0) })
         }
+        if (oldVersion < 3) db.execSQL("ALTER TABLE text_dhikr ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
     }
 
     fun loadPhotoCategories(): List<PhotoCategory> {
@@ -942,9 +956,9 @@ private class AzkarDatabase(context: Context) :
 
     fun loadTextItems(prefs: android.content.SharedPreferences): List<Dhikr> {
         val rows = mutableListOf<Dhikr>()
-        readableDatabase.query("text_dhikr", arrayOf("id", "text", "target", "count"),
+        readableDatabase.query("text_dhikr", arrayOf("id", "text", "target", "count", "is_favorite"),
             null, null, null, null, "rowid ASC").use { c ->
-            while (c.moveToNext()) rows.add(Dhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3)))
+            while (c.moveToNext()) rows.add(Dhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3), c.getInt(4) == 1))
         }
         if (rows.isEmpty() && !prefs.getBoolean("texts_migrated_to_sqlite", false)) {
             val oldItems = loadLegacyTextItems(prefs)
@@ -983,7 +997,7 @@ private class AzkarDatabase(context: Context) :
             items.forEach { item ->
                 val values = ContentValues().apply {
                     put("id", item.id); put("text", item.text)
-                    put("target", item.target); put("count", item.count)
+                    put("target", item.target); put("count", item.count); put("is_favorite", if (item.isFavorite) 1 else 0)
                 }
                 db.insertWithOnConflict("text_dhikr", null, values, SQLiteDatabase.CONFLICT_REPLACE)
             }
