@@ -23,6 +23,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -126,6 +127,7 @@ private fun AzkarMuslimApp() {
     var editTarget by remember { mutableStateOf("٣٣") }
     var photoTargetDialog by remember { mutableStateOf(false) }
     var photoOrderDialog by remember { mutableStateOf(false) }
+    var photoDragOrderDialog by remember { mutableStateOf(false) }
     var targetPhotoPosition by remember { mutableStateOf("") }
     var pendingPhotoPath by remember { mutableStateOf<String?>(null) }
     var targetPhotoValue by remember { mutableStateOf("٣") }
@@ -135,6 +137,7 @@ private fun AzkarMuslimApp() {
     var menuExpanded by remember { mutableStateOf(false) }
     var photoFullscreen by remember { mutableStateOf(false) }
     val activePhotoItems = photoItems.filter { it.categoryId == selectedCategoryId }
+    val latestActivePhotoItems by rememberUpdatedState(activePhotoItems)
 
     fun saveTexts(list: List<Dhikr>) {
         textItems = list
@@ -442,7 +445,8 @@ private fun AzkarMuslimApp() {
                                             DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
                                             DropdownMenuItem(text = { Text("إضافة صورة") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; photoPicker.launch("image/*") })
                                             DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = item.target.toString().toArabicDigits(); pendingPhotoPath = item.path; photoTargetDialog = true })
-                                            DropdownMenuItem(text = { Text("تغيير ترتيب الصورة") }, leadingIcon = { Icon(Icons.Default.Refresh, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (index + 1).toString().toArabicDigits(); photoOrderDialog = true })
+                                            DropdownMenuItem(text = { Text("ترتيب الصور بالسحب والإفلات") }, leadingIcon = { Text("☰") }, onClick = { menuExpanded = false; photoDragOrderDialog = true })
+                                            DropdownMenuItem(text = { Text("تعديل مكان الصورة بالرقم") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (index + 1).toString().toArabicDigits(); photoOrderDialog = true })
                                             DropdownMenuItem(text = { Text("حذف الصورة") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; File(item.path).delete(); saveActivePhotos(activePhotoItems.filterNot { it.id == item.id }) })
                                         }
                                     }
@@ -526,6 +530,59 @@ private fun AzkarMuslimApp() {
                 saveActivePhotos(list); photoTargetDialog=false; pendingPhotoPath=null
             }
         }) { Text("حفظ") } }, dismissButton = { TextButton(onClick = { photoTargetDialog=false; pendingPhotoPath=null }) { Text("إلغاء") } })
+
+        if (photoDragOrderDialog) AlertDialog(
+            onDismissRequest = { photoDragOrderDialog = false },
+            title = { Text("ترتيب الصور بالسحب والإفلات") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Text("اضغط مطولاً على الصورة واسحبها إلى المكان المطلوب", color = Color.Gray, fontSize = 12.sp)
+                    LazyColumn(
+                        modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        itemsIndexed(activePhotoItems, key = { _, photo -> photo.id }) { photoIndex, photo ->
+                            Row(
+                                Modifier.fillMaxWidth()
+                                    .background(Color(0xFFFFF6DF), RoundedCornerShape(10.dp))
+                                    .border(1.dp, Gold, RoundedCornerShape(10.dp))
+                                    .pointerInput(photo.id) {
+                                        var dragDistance = 0f
+                                        detectDragGesturesAfterLongPress(
+                                            onDrag = { change, dragAmount ->
+                                                change.consume()
+                                                dragDistance += dragAmount.y
+                                                if (kotlin.math.abs(dragDistance) >= 65f) {
+                                                    val currentList = latestActivePhotoItems.toMutableList()
+                                                    val from = currentList.indexOfFirst { it.id == photo.id }
+                                                    val to = if (dragDistance < 0f) from - 1 else from + 1
+                                                    if (from >= 0 && to in currentList.indices) {
+                                                        val moved = currentList.removeAt(from)
+                                                        currentList.add(to, moved)
+                                                        saveActivePhotos(currentList)
+                                                        selectedPhoto = to
+                                                    }
+                                                    dragDistance = 0f
+                                                }
+                                            },
+                                            onDragEnd = { dragDistance = 0f },
+                                            onDragCancel = { dragDistance = 0f }
+                                        )
+                                    }
+                                    .padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text("☰", color = DeepGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                                StoredPhoto(photo.path, Modifier.size(width = 58.dp, height = 58.dp))
+                                Text("الصورة ${(photoIndex + 1).toString().toArabicDigits()}", color = DeepGreen, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { photoDragOrderDialog = false }) { Text("تم") } }
+        )
 
         if (photoOrderDialog) AlertDialog(
             onDismissRequest = { photoOrderDialog = false },
