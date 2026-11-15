@@ -199,7 +199,8 @@ private fun AzkarMuslimApp() {
                                 }
                             } finally {
                                 connection.disconnect()
-                            }                            if (destination.length() > 0) {
+                            }
+                            if (destination.length() > 0) {
                                 val newItem = PhotoDhikr(imageId, destination.absolutePath, 3, categoryId = category.id)
                                 val oldIndex = currentPhotos.indexOfFirst { it.id == imageId }
                                 if (oldIndex >= 0) currentPhotos[oldIndex] = newItem else currentPhotos.add(newItem)
