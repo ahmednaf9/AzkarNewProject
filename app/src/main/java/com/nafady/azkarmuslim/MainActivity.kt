@@ -99,7 +99,7 @@ private fun Int.toArabicDigits(): String = toString().toArabicDigits()
 
 private data class Dhikr(val id: String, val text: String, val target: Int, val count: Int = 0, val isFavorite: Boolean = false)
 private data class PhotoCategory(val id: String, val name: String, val builtIn: Boolean = false)
-private data class PhotoDhikr(val id: String, val path: String, val target: Int, val count: Int = 0, val categoryId: String = "builtin_photos")
+private data class PhotoDhikr(val id: String, val path: String, val target: Int, val count: Int = 0, val categoryId: String = "builtin_photos", val isFavorite: Boolean = false)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -144,7 +144,7 @@ private fun AzkarMuslimApp() {
     var message by remember { mutableStateOf<String?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
     var photoFullscreen by remember { mutableStateOf(false) }
-    val activePhotoItems = photoItems.filter { it.categoryId == selectedCategoryId }
+    val activePhotoItems = if (showingFavorites) photoItems.filter { it.isFavorite } else photoItems.filter { it.categoryId == selectedCategoryId }
     val latestActivePhotoItems by rememberUpdatedState(activePhotoItems)
 
     fun saveTexts(list: List<Dhikr>) {
@@ -345,8 +345,8 @@ private fun AzkarMuslimApp() {
                         IconButton(onClick = { showSettings = true }) { Icon(Icons.Default.Settings, "الإعدادات", tint = Gold) }
                         Text("أذكاري المفضلة", fontSize = 27.sp, fontWeight = FontWeight.ExtraBold, color = Gold)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (tab == 0) IconButton(onClick = { showingFavorites = !showingFavorites; selectedText = 0 }) {
-                                Icon(if (showingFavorites) Icons.Default.Star else Icons.Default.StarBorder, contentDescription = if (showingFavorites) "كل الأذكار" else "الأذكار المفضلة", tint = Gold)
+                            IconButton(onClick = { showingFavorites = !showingFavorites; selectedPhoto = 0 }) {
+                                Icon(if (showingFavorites) Icons.Default.Star else Icons.Default.StarBorder, contentDescription = if (showingFavorites) "كل الصور" else "الصور المفضلة", tint = Gold)
                             }
                             Box {
                             IconButton(onClick = { menuExpanded = true }) { Icon(Icons.Default.MoreVert, contentDescription = "القائمة", tint = Gold) }
@@ -389,7 +389,7 @@ private fun AzkarMuslimApp() {
                                 photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.forEach { category ->
                                     FilterChip(
                                         selected = selectedCategoryId == category.id,
-                                        onClick = { tab = 1; selectedCategoryId = category.id; selectedPhoto = 0 },
+                                        onClick = { tab = 1; showingFavorites = false; selectedCategoryId = category.id; selectedPhoto = 0 },
                                         label = {
                                             Text(
                                                 category.name,
@@ -516,6 +516,12 @@ private fun AzkarMuslimApp() {
                                         detectTapGestures(onDoubleTap = { photoFullscreen = true })
                                     }) {
                                         StoredPhoto(item.path, Modifier.fillMaxSize())
+                                        IconButton(
+                                            onClick = { savePhotos(photoItems.map { photo -> if (photo.id == item.id) photo.copy(isFavorite = !photo.isFavorite) else photo }) },
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).background(Color.Black.copy(alpha = 0.35f), CircleShape)
+                                        ) {
+                                            Icon(if (item.isFavorite) Icons.Default.Star else Icons.Default.StarBorder, contentDescription = "تبديل المفضلة", tint = if (item.isFavorite) Gold else Color.White)
+                                        }
                                     }
                                 }
                                 Spacer(Modifier.height(8.dp))
@@ -770,20 +776,6 @@ private fun AzkarMuslimApp() {
             Column {
                 Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) { Text("إعادة العداد تلقائياً بعد اكتمال العدد", Modifier.weight(1f)); Switch(autoRestart, { autoRestart=it; prefs.edit().putBoolean("auto_restart",it).apply() }) }
                 Spacer(Modifier.height(12.dp))
-                OutlinedButton(
-                    onClick = {
-                        tab = 0
-                        selectedText = 0
-                        showingFavorites = false
-                        showSettings = false
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(Icons.Default.TextFields, contentDescription = null)
-                    Spacer(Modifier.width(6.dp))
-                    Text("فتح الأذكار المكتوبة")
-                }
-                Spacer(Modifier.height(12.dp))
                 Text("إدارة خانات الصور", fontWeight = FontWeight.Bold, color = DeepGreen)
                 OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("اسم الخانة الجديدة") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
                 Button(onClick = {
@@ -917,7 +909,7 @@ private fun loadLegacyPhotoItems(prefs: android.content.SharedPreferences): List
  * growing SharedPreferences JSON value. Existing installations are migrated.
  */
 private class AzkarDatabase(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, "azkar_library.db", null, 3) {
+    SQLiteOpenHelper(context.applicationContext, "azkar_library.db", null, 4) {
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
@@ -935,7 +927,8 @@ private class AzkarDatabase(context: Context) :
                 path TEXT NOT NULL,
                 target INTEGER NOT NULL,
                 count INTEGER NOT NULL,
-                category_id TEXT NOT NULL DEFAULT 'builtin_photos'
+                category_id TEXT NOT NULL DEFAULT 'builtin_photos',
+                is_favorite INTEGER NOT NULL DEFAULT 0
             )""".trimIndent()
         )
         db.execSQL("CREATE TABLE photo_categories (id TEXT PRIMARY KEY NOT NULL, name TEXT NOT NULL, built_in INTEGER NOT NULL DEFAULT 0, sort_order INTEGER NOT NULL DEFAULT 0)")
@@ -949,6 +942,7 @@ private class AzkarDatabase(context: Context) :
             db.insert("photo_categories", null, ContentValues().apply { put("id", "builtin_photos"); put("name", "صور ذكر"); put("built_in", 1); put("sort_order", 0) })
         }
         if (oldVersion < 3) db.execSQL("ALTER TABLE text_dhikr ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
+        if (oldVersion < 4) db.execSQL("ALTER TABLE photo_dhikr ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0")
     }
 
     fun loadPhotoCategories(): List<PhotoCategory> {
@@ -990,9 +984,9 @@ private class AzkarDatabase(context: Context) :
 
     fun loadPhotoItems(prefs: android.content.SharedPreferences): List<PhotoDhikr> {
         val rows = mutableListOf<PhotoDhikr>()
-        readableDatabase.query("photo_dhikr", arrayOf("id", "path", "target", "count", "category_id"),
+        readableDatabase.query("photo_dhikr", arrayOf("id", "path", "target", "count", "category_id", "is_favorite"),
             null, null, null, null, "rowid ASC").use { c ->
-            while (c.moveToNext()) rows.add(PhotoDhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3), c.getString(4)))
+            while (c.moveToNext()) rows.add(PhotoDhikr(c.getString(0), c.getString(1), c.getInt(2), c.getInt(3), c.getString(4), c.getInt(5) == 1))
         }
         if (rows.isEmpty() && !prefs.getBoolean("photos_migrated_to_sqlite", false)) {
             val oldItems = loadLegacyPhotoItems(prefs)
@@ -1037,7 +1031,7 @@ private class AzkarDatabase(context: Context) :
             items.forEach { item ->
                 val values = ContentValues().apply {
                     put("id", item.id); put("path", item.path)
-                    put("target", item.target); put("count", item.count); put("category_id", item.categoryId)
+                    put("target", item.target); put("count", item.count); put("category_id", item.categoryId); put("is_favorite", if (item.isFavorite) 1 else 0)
                 }
                 db.insertWithOnConflict("photo_dhikr", null, values, SQLiteDatabase.CONFLICT_REPLACE)
             }
