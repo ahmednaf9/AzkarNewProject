@@ -381,11 +381,27 @@ private fun AzkarMuslimApp() {
                 Card(Modifier.fillMaxSize(), shape = RoundedCornerShape(28.dp), colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFBF1)), border = BorderStroke(1.dp, Gold), elevation = CardDefaults.cardElevation(8.dp)) {
                     Column(Modifier.fillMaxSize().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                            // RTL layout: the first category (صور ذكر) starts at the far right.
+                            // RTL layout: the text tab and photo categories start from the right.
                             Row(
                                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start)
                             ) {
+                                FilterChip(
+                                    selected = tab == 0,
+                                    onClick = { tab = 0; selectedText = 0 },
+                                    label = {
+                                        Text(
+                                            "ذكر مكتوب",
+                                            maxLines = 2,
+                                            softWrap = true,
+                                            textAlign = TextAlign.Center,
+                                            lineHeight = 14.sp,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.ExtraBold
+                                        )
+                                    },
+                                    modifier = Modifier.heightIn(min = 44.dp)
+                                )
                                 photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.forEach { category ->
                                     FilterChip(
                                         selected = selectedCategoryId == category.id,
