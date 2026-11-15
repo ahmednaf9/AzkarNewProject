@@ -386,22 +386,6 @@ private fun AzkarMuslimApp() {
                                 Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.Start)
                             ) {
-                                FilterChip(
-                                    selected = tab == 0,
-                                    onClick = { tab = 0; selectedText = 0 },
-                                    label = {
-                                        Text(
-                                            "ذكر مكتوب",
-                                            maxLines = 2,
-                                            softWrap = true,
-                                            textAlign = TextAlign.Center,
-                                            lineHeight = 14.sp,
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.ExtraBold
-                                        )
-                                    },
-                                    modifier = Modifier.heightIn(min = 44.dp)
-                                )
                                 photoCategories.sortedBy { if (it.id == "builtin_photos") 0 else 1 }.forEach { category ->
                                     FilterChip(
                                         selected = selectedCategoryId == category.id,
@@ -785,6 +769,20 @@ private fun AzkarMuslimApp() {
         if (showSettings) AlertDialog(onDismissRequest = { showSettings=false }, title = { Text("الإعدادات") }, text = {
             Column {
                 Row(Modifier.fillMaxWidth(), verticalAlignment=Alignment.CenterVertically) { Text("إعادة العداد تلقائياً بعد اكتمال العدد", Modifier.weight(1f)); Switch(autoRestart, { autoRestart=it; prefs.edit().putBoolean("auto_restart",it).apply() }) }
+                Spacer(Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = {
+                        tab = 0
+                        selectedText = 0
+                        showingFavorites = false
+                        showSettings = false
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Default.TextFields, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("فتح الأذكار المكتوبة")
+                }
                 Spacer(Modifier.height(12.dp))
                 Text("إدارة خانات الصور", fontWeight = FontWeight.Bold, color = DeepGreen)
                 OutlinedTextField(value = newCategoryName, onValueChange = { newCategoryName = it }, label = { Text("اسم الخانة الجديدة") }, modifier = Modifier.fillMaxWidth(), singleLine = true)
