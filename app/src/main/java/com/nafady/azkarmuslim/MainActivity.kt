@@ -23,7 +23,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -701,34 +700,10 @@ private fun AzkarMuslimApp() {
                                 Modifier.fillMaxWidth()
                                     .background(Color(0xFFFFF6DF), RoundedCornerShape(10.dp))
                                     .border(1.dp, Gold, RoundedCornerShape(10.dp))
-                                    .pointerInput(photo.id) {
-                                        var dragDistance = 0f
-                                        detectDragGesturesAfterLongPress(
-                                            onDrag = { change, dragAmount ->
-                                                change.consume()
-                                                dragDistance += dragAmount.y
-                                                if (kotlin.math.abs(dragDistance) >= 65f) {
-                                                    val currentList = latestActivePhotoItems.toMutableList()
-                                                    val from = currentList.indexOfFirst { it.id == photo.id }
-                                                    val to = if (dragDistance < 0f) from - 1 else from + 1
-                                                    if (from >= 0 && to in currentList.indices) {
-                                                        val moved = currentList.removeAt(from)
-                                                        currentList.add(to, moved)
-                                                        saveActivePhotos(currentList)
-                                                        selectedPhoto = to
-                                                    }
-                                                    dragDistance = 0f
-                                                }
-                                            },
-                                            onDragEnd = { dragDistance = 0f },
-                                            onDragCancel = { dragDistance = 0f }
-                                        )
-                                    }
                                     .padding(8.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                Text("☰", color = DeepGreen, fontSize = 22.sp, fontWeight = FontWeight.Bold)
                                 StoredPhoto(photo.path, Modifier.size(width = 58.dp, height = 58.dp))
                                 Text("الصورة ${(photoIndex + 1).toString().toArabicDigits()}", color = DeepGreen, fontWeight = FontWeight.Bold)
                             }
