@@ -133,6 +133,8 @@ private fun AzkarMuslimApp() {
     var photoDragOrderDialog by remember { mutableStateOf(false) }
     var goToPhotoDialog by remember { mutableStateOf(false) }
     var movePhotoDialog by remember { mutableStateOf(false) }
+    var deletePhotosDialog by remember { mutableStateOf(false) }
+    var selectedDeletePhotoIds by remember { mutableStateOf(setOf<String>()) }
     var movePhotoTargetCategoryId by remember { mutableStateOf("") }
     var keepPhotoOriginal by remember { mutableStateOf(true) }
     var goToPhotoNumber by remember { mutableStateOf("") }
@@ -355,6 +357,8 @@ private fun AzkarMuslimApp() {
                                     DropdownMenuItem(text = { Text("تحميل مجلد صور كامل") }, leadingIcon = { Icon(Icons.Default.ImageSymbol, null) }, onClick = { menuExpanded = false; folderPicker.launch(null) })
                                     DropdownMenuItem(text = { Text("إضافة صورة") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { menuExpanded = false; photoPicker.launch("image/*") })
                                     if (activePhotoItems.isNotEmpty()) {
+                                        DropdownMenuItem(text = { Text("اختيار صور للحذف") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; selectedDeletePhotoIds = emptySet(); deletePhotosDialog = true })
+                                        DropdownMenuItem(text = { Text("حذف كل صور المجلد") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; selectedDeletePhotoIds = activePhotoItems.map { it.id }.toSet(); deletePhotosDialog = true })
                                         val currentPhoto = activePhotoItems[selectedPhoto.coerceIn(0, activePhotoItems.lastIndex)]
                                         DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = currentPhoto.target.toString().toArabicDigits(); pendingPhotoPath = currentPhoto.path; photoTargetDialog = true })
                                         DropdownMenuItem(text = { Text("ترتيب الصور بالسحب والإفلات") }, leadingIcon = { Text("☰") }, onClick = { menuExpanded = false; photoDragOrderDialog = true })
@@ -769,6 +773,58 @@ private fun AzkarMuslimApp() {
                 }) { Text("حفظ الترتيب") }
             },
             dismissButton = { TextButton(onClick = { photoOrderDialog = false }) { Text("إلغاء") } }
+        )
+
+
+        if (deletePhotosDialog) AlertDialog(
+            onDismissRequest = { deletePhotosDialog = false; selectedDeletePhotoIds = emptySet() },
+            title = { Text("حذف صور من المجلد") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("حدد الصور التي تريد حذفها، أو اختر تحديد الكل. الصور المحددة: " + selectedDeletePhotoIds.size.toString().toArabicDigits() + " من " + activePhotoItems.size.toString().toArabicDigits())
+                    Row(Modifier.fillMaxWidth().clickable {
+                        selectedDeletePhotoIds = if (selectedDeletePhotoIds.size == activePhotoItems.size) emptySet() else activePhotoItems.map { it.id }.toSet()
+                    }, verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = activePhotoItems.isNotEmpty() && selectedDeletePhotoIds.size == activePhotoItems.size,
+                            onCheckedChange = { checked -> selectedDeletePhotoIds = if (checked) activePhotoItems.map { it.id }.toSet() else emptySet() }
+                        )
+                        Text("تحديد الكل")
+                    }
+                    Divider()
+                    LazyColumn(Modifier.heightIn(max = 300.dp)) {
+                        itemsIndexed(activePhotoItems, key = { _, photo -> photo.id }) { index, photo ->
+                            Row(Modifier.fillMaxWidth().clickable {
+                                selectedDeletePhotoIds = if (photo.id in selectedDeletePhotoIds) selectedDeletePhotoIds - photo.id else selectedDeletePhotoIds + photo.id
+                            }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(
+                                    checked = photo.id in selectedDeletePhotoIds,
+                                    onCheckedChange = { checked -> selectedDeletePhotoIds = if (checked) selectedDeletePhotoIds + photo.id else selectedDeletePhotoIds - photo.id }
+                                )
+                                StoredPhoto(photo.path, Modifier.size(48.dp))
+                                Spacer(Modifier.width(10.dp))
+                                Text("الصورة " + (index + 1).toString().toArabicDigits())
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(enabled = selectedDeletePhotoIds.isNotEmpty(), onClick = {
+                    val idsToDelete = selectedDeletePhotoIds
+                    activePhotoItems.filter { it.id in idsToDelete }.forEach { photo ->
+                        try { File(photo.path).delete() } catch (_: Exception) { }
+                    }
+                    saveActivePhotos(activePhotoItems.filterNot { it.id in idsToDelete })
+                    selectedDeletePhotoIds = emptySet()
+                    deletePhotosDialog = false
+                    selectedPhoto = 0
+                    message = "تم حذف الصور المحددة"
+                }) { Text("حذف المحدد (" + selectedDeletePhotoIds.size.toString().toArabicDigits() + ")") }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletePhotosDialog = false; selectedDeletePhotoIds = emptySet() }) { Text("إلغاء") }
+            }
         )
 
         if (showSettings) AlertDialog(onDismissRequest = { showSettings=false }, title = { Text("الإعدادات") }, text = {
