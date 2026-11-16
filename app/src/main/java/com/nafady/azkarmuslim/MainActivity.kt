@@ -129,7 +129,6 @@ private fun AzkarMuslimApp() {
     var editTarget by remember { mutableStateOf("٣٣") }
     var photoTargetDialog by remember { mutableStateOf(false) }
     var photoOrderDialog by remember { mutableStateOf(false) }
-    var photoDragOrderDialog by remember { mutableStateOf(false) }
     var goToPhotoDialog by remember { mutableStateOf(false) }
     var movePhotoDialog by remember { mutableStateOf(false) }
     var deletePhotosDialog by remember { mutableStateOf(false) }
@@ -360,7 +359,6 @@ private fun AzkarMuslimApp() {
                                         DropdownMenuItem(text = { Text("حذف كل صور المجلد") }, leadingIcon = { Icon(Icons.Default.Delete, null) }, onClick = { menuExpanded = false; selectedDeletePhotoIds = activePhotoItems.map { it.id }.toSet(); deletePhotosDialog = true })
                                         val currentPhoto = activePhotoItems[selectedPhoto.coerceIn(0, activePhotoItems.lastIndex)]
                                         DropdownMenuItem(text = { Text("تعديل العدد") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoValue = currentPhoto.target.toString().toArabicDigits(); pendingPhotoPath = currentPhoto.path; photoTargetDialog = true })
-                                        DropdownMenuItem(text = { Text("ترتيب الصور بالسحب والإفلات") }, leadingIcon = { Text("☰") }, onClick = { menuExpanded = false; photoDragOrderDialog = true })
                                         DropdownMenuItem(text = { Text("تعديل مكان الصورة بالرقم") }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { menuExpanded = false; targetPhotoPosition = (selectedPhoto + 1).toString().toArabicDigits(); photoOrderDialog = true })
                                         DropdownMenuItem(text = { Text("الانتقال إلى صورة برقمها") }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { menuExpanded = false; goToPhotoNumber = (selectedPhoto + 1).toString().toArabicDigits(); goToPhotoDialog = true })
                                         DropdownMenuItem(text = { Text("نقل الصورة إلى مجلد") }, leadingIcon = { Icon(Icons.Default.ArrowForward, null) }, onClick = { menuExpanded = false; movePhotoTargetCategoryId = photoCategories.firstOrNull { it.id != selectedCategoryId }?.id.orEmpty(); keepPhotoOriginal = true; movePhotoDialog = true })
@@ -683,35 +681,6 @@ private fun AzkarMuslimApp() {
             dismissButton = {
                 TextButton(onClick = { movePhotoDialog = false }) { Text("إلغاء") }
             }
-        )
-
-        if (photoDragOrderDialog) AlertDialog(
-            onDismissRequest = { photoDragOrderDialog = false },
-            title = { Text("ترتيب الصور بالسحب والإفلات") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Text("اضغط مطولاً على الصورة واسحبها إلى المكان المطلوب", color = Color.Gray, fontSize = 12.sp)
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().heightIn(max = 440.dp),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        itemsIndexed(activePhotoItems, key = { _, photo -> photo.id }) { photoIndex, photo ->
-                            Row(
-                                Modifier.fillMaxWidth()
-                                    .background(Color(0xFFFFF6DF), RoundedCornerShape(10.dp))
-                                    .border(1.dp, Gold, RoundedCornerShape(10.dp))
-                                    .padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                StoredPhoto(photo.path, Modifier.size(width = 58.dp, height = 58.dp))
-                                Text("الصورة ${(photoIndex + 1).toString().toArabicDigits()}", color = DeepGreen, fontWeight = FontWeight.Bold)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { photoDragOrderDialog = false }) { Text("تم") } }
         )
 
         if (photoOrderDialog) AlertDialog(
